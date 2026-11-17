@@ -1,3 +1,8 @@
+---
+spec_id: 001-reimplementar-printfarm
+status: draft
+---
+
 # Feature Specification: Reimplementar o núcleo da farm
 
 **Feature Branch**: `001-reimplementar-printfarm`
@@ -7,6 +12,16 @@
 **Status**: Draft
 
 **Input**: User description: "Reimplementar o software de referência em docs_apoio/software_ref (ERP/MES de impressão 3D) seguindo o speckit e a constituição do Farm 3D."
+
+## Clarifications
+
+### Session 2026-11-17
+
+- Q: Quando uma impressão falha, como o sistema deve registrar o material já gasto? → A: Exigir material gasto ao registrar a falha, aceitando zero, e baixar essa quantidade uma única vez.
+- Q: Após uma falha, quando o sistema deve completar o material reservado para a reimpressão? → A: Completar automaticamente ao registrar a reimpressão. Se faltar saldo, preservar a reserva restante e bloquear o início até completar.
+- Q: Se o consumo real de uma impressão superar a quantidade reservada, como o sistema deve tratar essa diferença ao concluir ou registrar falha? → A: Baixar a reserva e cobrir o excesso com saldo livre, do material mais antigo primeiro. Se não houver saldo suficiente, recusar a operação inteira até regularizar o estoque.
+- Q: Alterações no perfil de produção de um modelo devem mudar os lotes de produção já liberados? → A: Preservar peças por prancha, tempo e material dos lotes já liberados. Alterações valem apenas para novas liberações; reimpressões usam os parâmetros originais.
+- Q: Até que momento deve ser permitido cancelar um pedido? → A: Até antes da primeira execução, desde que não exista fatura nem pagamento. O cancelamento também cancela os lotes pendentes, remove seus itens da fila e libera suas reservas.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -27,6 +42,8 @@ Vendas confirma um pedido. Produção libera a linha e o sistema corta a quantid
 5. **Given** um pedido ainda em confirmação pendente, **When** produção tenta gerar lotes, **Then** nenhum lote de produção é criado.
 6. **Given** dois lotes de material do mesmo insumo, o mais antigo com saldo livre e o mais novo também, **When** a liberação reserva, **Then** o mais antigo é consumido na reserva antes do mais novo.
 7. **Given** um lote já reservado, **When** a mesma liberação é repetida, **Then** a segunda reserva é recusada e o saldo reservado não dobra.
+8. **Given** uma linha já liberada em lotes de produção, **When** o perfil do modelo tem peças por prancha, minutos por prancha ou gramas por prancha alterados, **Then** os lotes existentes preservam os parâmetros e quantidades planejadas da liberação, sem alterar reservas, e somente novas liberações usam o perfil atualizado.
+9. **Given** um lote de produção liberado antes de uma alteração do perfil, **When** uma execução falha e gera reimpressão, **Then** a reimpressão preserva os parâmetros e quantidades planejadas originais do lote de produção.
 
 ---
 
@@ -65,6 +82,8 @@ Vendas monta um orçamento com linhas, envia, aprova, rejeita ou deixa expirar. 
 5. **Given** um orçamento em rascunho, enviado ou aprovado, **When** vendas rejeita com um motivo, **Then** o estado fica rejeitado, o motivo fica nas observações e não há geração de pedido.
 6. **Given** um orçamento em rascunho, enviado ou aprovado cuja validade já passou, **When** o processamento periódico roda, **Then** o estado fica expirado e não há geração de pedido. Rejeitado e pedido gerado não são expirados por esse processamento.
 7. **Given** um pedido criado manualmente, **When** ele ainda está em confirmação pendente, **Then** não admite lote de produção, fatura nem pagamento, e a confirmação só o leva a confirmado ou a cancelado. Cancelado não muda mais.
+8. **Given** um pedido confirmado sem execução iniciada, fatura ou pagamento, com lotes de produção pendentes e reservas, **When** vendas cancela o pedido, **Then** o pedido e os lotes pendentes ficam cancelados, seus itens saem da fila, as reservas são liberadas uma única vez e as mudanças de estado ficam registradas na trilha.
+9. **Given** um pedido com qualquer execução já iniciada, mesmo que depois encerrada, ou com fatura ou pagamento registrado, **When** vendas tenta cancelar, **Then** o cancelamento é recusado sem alterar pedido, lotes de produção, fila, reservas ou lançamentos financeiros.
 
 ---
 
@@ -87,7 +106,7 @@ Compras pede material em quilos, recebe em gramas e o saldo fica disponível par
 
 ### User Story 5 - Executar sem liberar a máquina cedo (Priority: P3)
 
-O operador inicia, pausa, conclui ou falha a impressão. Ao concluir a impressão, o lote fica aguardando retirada e a impressora continua ocupada. Só depois da retirada e da preparação, e sem manutenção vencida, a máquina volta a ficar disponível. Falha sem reimpressão devolve a reserva restante. Falha com reimpressão mantém a reserva e abre outra execução.
+O operador inicia, pausa, conclui ou falha a impressão. Ao concluir a impressão, o lote fica aguardando retirada e a impressora continua ocupada. Só depois da retirada e da preparação, e sem manutenção vencida, a máquina volta a ficar disponível. Toda falha exige o material real gasto, aceitando zero, e baixa o consumo uma única vez. Falha sem reimpressão devolve a reserva restante. Falha com reimpressão mantém a reserva restante, tenta completá-la automaticamente até as gramas planejadas do lote de produção e abre outra execução. Sem saldo suficiente, a reimpressão fica na fila com falta de material indicada e início bloqueado até completar a reserva.
 
 **Why this priority**: A fila da história 1 ainda não é chão de fábrica. O princípio dos dois estados só aparece nesta jornada.
 
@@ -98,12 +117,17 @@ O operador inicia, pausa, conclui ou falha a impressão. Ao concluir a impressã
 1. **Given** um lote na fila e uma impressora disponível e compatível, **When** o operador inicia a execução, **Then** o lote fica em impressão e a impressora fica em impressão. Iniciar de novo a mesma execução é recusado.
 2. **Given** uma execução em impressão, **When** o operador pausa e depois retoma, **Then** o lote fica pausado e volta a em impressão, e o tempo pausado fica acumulado.
 3. **Given** uma execução em impressão, **When** o operador conclui, **Then** o lote fica aguardando retirada, a impressora fica aguardando retirada, o material informado sai do estoque uma única vez e uma segunda conclusão é recusada.
-4. **Given** a impressora aguardando retirada depois de uma impressão concluída, **When** o operador confirma a retirada e ainda não a preparação, **Then** o lote de produção fica concluído, a impressora fica em preparação e não aceita outro lote. Se a execução tinha falhado, o lote permanece em falha e só a impressora segue para preparação.
+4. **Given** a impressora aguardando retirada depois de uma impressão concluída, **When** o operador confirma a retirada e ainda não a preparação, **Then** o lote de produção fica concluído, a impressora fica em preparação e não aceita outro lote. Se a execução tinha falhado, a retirada não muda o estado atual do lote de produção nem o de uma reimpressão; sem reimpressão o lote permanece em falha, e só a impressora segue para preparação.
 5. **Given** a preparação concluída e horas acumuladas abaixo do limite, **When** o operador encerra a preparação, **Then** a impressora fica disponível.
 6. **Given** horas acumuladas iguais ou maiores que o limite cadastrado, **When** a preparação termina, **Then** a impressora fica em manutenção e não inicia outra impressão. Confirmar a manutenção com uma nota zera as horas acumuladas e, sem outro bloqueio, devolve a impressora a disponível.
-7. **Given** uma execução em impressão ou pausada, **When** o operador falha sem pedir reimpressão, **Then** o lote fica em falha, a reserva restante volta ao saldo livre e a impressora não fica disponível: segue para retirada do que houver na mesa.
-8. **Given** uma execução em impressão ou pausada, **When** o operador falha pedindo reimpressão, **Then** o lote volta para a fila, a reserva permanece e nasce uma execução nova planejada, ligada à que falhou.
-9. **Given** uma execução já concluída ou já falha, **When** alguém tenta falhar de novo, **Then** o pedido é recusado.
+7. **Given** uma execução em impressão ou pausada, **When** o operador falha sem pedir reimpressão e informa o material real gasto, **Then** esse consumo é baixado uma única vez, o lote fica em falha, a reserva restante volta ao saldo livre e a impressora não fica disponível: segue para retirada do que houver na mesa.
+8. **Given** uma execução em impressão ou pausada, **When** o operador falha pedindo reimpressão e informa o material real gasto, **Then** esse consumo é baixado uma única vez, o lote volta para a fila, a reserva restante permanece, o sistema tenta completá-la automaticamente até as gramas planejadas do lote de produção e nasce uma execução nova planejada, ligada à que falhou. Sem saldo livre suficiente, a reserva restante é preservada, nenhuma complementação parcial é feita e o início fica bloqueado com falta de material indicada.
+9. **Given** uma execução já concluída ou já falha, **When** alguém tenta falhar de novo, **Then** a tentativa é recusada e nenhuma nova baixa de estoque é gerada.
+10. **Given** uma execução em impressão ou pausada, **When** o operador registra falha com material real gasto igual a zero, **Then** a falha é registrada sem saída de estoque; com material omitido ou negativo, o registro é recusado sem alterar execução, reserva ou estoque.
+11. **Given** uma reimpressão que precisa completar a reserva e saldo livre suficiente, **When** a reimpressão é registrada, **Then** a complementação ocorre automaticamente pelo lote de material mais antigo com saldo livre até cobrir as gramas planejadas, sem duplicar a reserva restante.
+12. **Given** uma reimpressão na fila cuja complementação foi impedida por falta de saldo, **When** o operador tenta iniciar, **Then** o início é recusado até completar a reserva; a falha anterior e seu consumo continuam registrados, e a reserva restante permanece preservada.
+13. **Given** uma execução cujo consumo real supera a reserva e há saldo livre suficiente do mesmo material, **When** o operador conclui ou registra falha, **Then** a baixa usa a reserva da própria execução e cobre somente o excesso com saldo livre, do lote de material mais antigo primeiro, sem usar reservas de outros lotes de produção.
+14. **Given** uma execução cujo consumo real supera a reserva e o saldo livre não cobre o excesso, **When** o operador tenta concluir ou registrar falha, **Then** a operação inteira é recusada com indicação do material faltante, sem alterar execução, lote de produção, impressora, reserva ou estoque; após regularizar o estoque, a tentativa pode ser repetida sem baixa duplicada.
 
 ---
 
@@ -164,6 +188,7 @@ Cada mudança de estado de orçamento, pedido, lote de produção e impressora f
 
 - Quantidade de peças que não fecha prancha inteira: a última prancha usa a fração peças / peças por prancha. 10 peças com 4 por prancha geram pranchas de 4, 4 e 2; a terceira leva metade do tempo e metade do material.
 - Peças por prancha ausentes ou menores que 1 impedem a liberação.
+- Alterar um perfil de produção não recalcula lotes de produção já liberados, suas reservas ou suas reimpressões. Somente novas liberações usam o perfil atualizado.
 - Pedido com quantidade zero ou negativa é recusado.
 - Cor ou tamanho é obrigatório só quando o modelo oferece essa opção. A escolha fica gravada na linha.
 - Impressora inativa ou indisponível não entra na fila.
@@ -172,9 +197,13 @@ Cada mudança de estado de orçamento, pedido, lote de produção e impressora f
 - Orçamento sem validade não expira pelo processamento periódico.
 - Recebimento com peso zero ou negativo é recusado.
 - Conclusão de execução sem material real informado é recusada; o estimado não é lançado no lugar do real em silêncio.
+- Consumo real acima da reserva usa a reserva da própria execução e cobre o excesso com saldo livre do mesmo material, do lote de material mais antigo primeiro. Reservas de outros lotes de produção nunca são usadas. Sem saldo livre suficiente, concluir ou registrar falha é recusado por inteiro, com indicação do material faltante e sem alterar execução, lote de produção, impressora, reserva ou estoque; regularizar o estoque permite repetir a tentativa sem baixa duplicada.
+- Falha exige material real gasto maior ou igual a zero. Omitir ou informar valor negativo recusa o registro sem alterar execução, reserva ou estoque. Zero fica registrado na execução sem gerar saída; consumo positivo gera uma única baixa mesmo diante de repetição da tentativa.
 - Falha pede um motivo da lista fechada: nenhum, aderência à mesa, entupimento, deslocamento de camada, falta de material, outro.
 - Reimpressão não nasce de execução que não esteja em impressão ou pausada.
+- Ao registrar reimpressão, o sistema tenta completar automaticamente a reserva restante até as gramas planejadas do lote de produção, seguindo o lote de material mais antigo com saldo livre. Sem saldo suficiente, não reserva parte do complemento nem desfaz a falha ou seu consumo; preserva a reserva restante e mantém a reimpressão na fila com falta de material indicada e início bloqueado até completar a reserva.
 - Pedido cancelado é imutável. Não volta a confirmação pendente.
+- Cancelamento de pedido só é permitido antes de qualquer execução iniciada e sem fatura ou pagamento. Cancela também os lotes de produção pendentes, remove os itens da fila e libera reservas uma única vez, na mesma operação. Qualquer execução já iniciada, mesmo encerrada, ou lançamento financeiro impede o cancelamento inteiro, sem alterações parciais.
 - Moeda e quantidades de material em grama na operação; compra é pedida em quilos e recebida em gramas (1 kg = 1000 g).
 - Arredondamento de dinheiro é no centavo mais próximo, metade para cima. Gramas reservadas guardam até três casas e não arredondam para esconder falta de saldo.
 
@@ -190,16 +219,16 @@ Cada mudança de estado de orçamento, pedido, lote de produção e impressora f
 - **FR-006**: Vendas MUST poder criar orçamento em rascunho, marcar enviado, aprovar a partir de rascunho ou enviado, e rejeitar a partir de rascunho, enviado ou aprovado, guardando o motivo nas observações.
 - **FR-007**: O processamento periódico MUST marcar como expirado o orçamento em rascunho, enviado ou aprovado cuja validade já passou. MUST NOT expirar rejeitado nem pedido gerado. Orçamento sem validade MUST NOT expirar por esse meio.
 - **FR-008**: Gerar pedido a partir de orçamento MUST exigir orçamento aprovado, validade não vencida e data prometida. O pedido nasce confirmado. O orçamento passa a pedido gerado. Uma segunda geração do mesmo orçamento MUST ser recusada.
-- **FR-009**: Pedido criado manualmente MUST nascer em confirmação pendente. Desse estado só MUST ir para confirmado ou cancelado. Cancelado MUST ser imutável. Confirmação pendente MUST NOT gerar lote de produção, fatura nem pagamento.
+- **FR-009**: Pedido criado manualmente MUST nascer em confirmação pendente. Desse estado só MUST ir para confirmado ou cancelado. Cancelado MUST ser imutável. Confirmação pendente MUST NOT gerar lote de produção, fatura nem pagamento. Vendas e Admin MUST poder cancelar um pedido em confirmação pendente ou confirmado, inclusive com lotes na fila, somente se nenhuma execução tiver sido iniciada e não existir fatura nem pagamento. O cancelamento MUST cancelar também os lotes de produção pendentes, remover seus itens da fila e liberar suas reservas uma única vez, na mesma operação, com trilha das mudanças de estado. Qualquer execução já iniciada, mesmo encerrada, ou fatura ou pagamento registrado MUST impedir o cancelamento inteiro, sem alterações parciais.
 - **FR-010**: A listagem de orçamentos MUST mostrar a composição de cada linha: modelo, material, quantidade, preço unitário e subtotal.
-- **FR-011**: Ao liberar uma linha de pedido confirmado, o sistema MUST criar lotes de produção pelo teto de peças / peças por prancha. A prancha incompleta MUST usar tempo e material proporcionais. O cenário 10 peças e 4 por prancha MUST produzir 3 lotes, o último com metade do tempo e metade do material da prancha cheia.
+- **FR-011**: Ao liberar uma linha de pedido confirmado, o sistema MUST criar lotes de produção pelo teto de peças / peças por prancha. A prancha incompleta MUST usar tempo e material proporcionais. O cenário 10 peças e 4 por prancha MUST produzir 3 lotes, o último com metade do tempo e metade do material da prancha cheia. A liberação MUST preservar os valores de peças por prancha, minutos por prancha e gramas por prancha usados no corte. Alterações posteriores do perfil MUST valer somente para novas liberações e MUST NOT recalcular lotes já liberados, suas quantidades planejadas, reservas ou reimpressões.
 - **FR-012**: Liberar MUST reservar, de uma vez, as gramas do lote no lote de material mais antigo com saldo livre. Saldo insuficiente MUST recusar a liberação inteira desse lote, sem reserva parcial. Repetir a liberação já reservada MUST ser recusado.
 - **FR-013**: Enfileirar com impressora, ou iniciar execução, MUST recusar impressora inativa, indisponível, ocupada ou incompatível com o material.
 - **FR-014**: O estado do lote de produção e o estado da impressora MUST mudar pelos eventos desta spec e MUST NOT ser inferidos um do outro. Concluir a impressão MUST deixar o lote aguardando retirada e a impressora aguardando retirada.
-- **FR-015**: A impressora só MUST voltar a disponível depois da retirada confirmada e da preparação concluída, e somente se as horas acumuladas estiverem abaixo do limite e ela não estiver indisponível. A retirada depois de uma execução concluída MUST marcar o lote como concluído. A retirada depois de uma falha MUST deixar o lote em falha.
+- **FR-015**: A impressora só MUST voltar a disponível depois da retirada confirmada e da preparação concluída, e somente se as horas acumuladas estiverem abaixo do limite e ela não estiver indisponível. A retirada depois de uma execução concluída MUST marcar o lote como concluído. A retirada depois de uma falha MUST NOT mudar o estado atual do lote de produção nem o de uma reimpressão; sem reimpressão o lote permanece em falha. A impressora MUST seguir para preparação também após falha com reimpressão.
 - **FR-016**: Ao atingir o limite de horas, a impressora MUST entrar em manutenção no fim da preparação e MUST NOT iniciar outra impressão. Confirmar a manutenção MUST exigir uma nota, MUST zerar as horas acumuladas e MUST devolver a impressora a disponível se não houver outro bloqueio.
-- **FR-017**: Concluir uma execução MUST lançar uma única saída de estoque com a quantidade real informada. Segunda conclusão MUST ser recusada. Quantidade real omitida MUST recusar a conclusão.
-- **FR-018**: Falhar MUST ser possível só em execução em impressão ou pausada, com motivo na lista fechada. Sem reimpressão, o lote vai a falha e a reserva restante volta ao livre. Com reimpressão, o lote volta à fila, a reserva permanece e nasce execução nova ligada à anterior.
+- **FR-017**: Concluir uma execução MUST lançar uma única saída de estoque com a quantidade real informada. Segunda conclusão MUST ser recusada. Quantidade real omitida MUST recusar a conclusão. Na conclusão ou na falha, o consumo MUST usar a reserva da própria execução e cobrir eventual excesso com saldo livre do mesmo material, do lote de material mais antigo primeiro, sem usar reservas de outros lotes de produção. Se a reserva e o saldo livre não cobrirem a quantidade real consumida, a operação inteira MUST ser recusada com indicação do material faltante, sem alterar execução, lote de produção, impressora, reserva ou estoque. Regularizar o estoque MUST permitir nova tentativa sem baixa duplicada.
+- **FR-018**: Falhar MUST ser possível só em execução em impressão ou pausada, com motivo na lista fechada e material real gasto obrigatório, maior ou igual a zero. O consumo positivo MUST seguir FR-017 e gerar uma única baixa de estoque ligada à execução; zero MUST ficar registrado sem saída de estoque. Material omitido ou negativo MUST recusar a falha sem alterar execução, reserva ou estoque. Repetir a falha MUST ser recusado sem nova baixa. Sem reimpressão, o lote vai a falha e a reserva restante volta ao livre. Com reimpressão, o lote volta à fila, a reserva restante permanece e nasce execução nova ligada à anterior. O sistema MUST tentar completar automaticamente a reserva até as gramas planejadas do lote de produção, usando primeiro o lote de material mais antigo com saldo livre. Sem saldo suficiente, MUST preservar a reserva restante sem complementação parcial, manter a falha e a baixa já registradas e indicar falta de material na fila. Iniciar a reimpressão MUST ser recusado enquanto a reserva não estiver completa.
 - **FR-019**: Compras MUST registrar pedido de compra em quilos e recebimento em gramas, criando lote de material, saldo e movimentação de entrada. Pedido de compra MUST refletir rascunho, enviado, parcialmente recebido, recebido e cancelado.
 - **FR-020**: O sistema MUST sugerir recompra quando o saldo livre do material ficar abaixo do ponto de reposição cadastrado. Sem ponto de reposição, não há sugestão.
 - **FR-021**: Vendas MUST registrar fatura e pagamento ligados a pedido confirmado, sem emissão fiscal e sem cobrança bancária. Meios de pagamento MUST ser dinheiro, cartão, Pix, transferência ou outro.
@@ -226,12 +255,12 @@ Cada mudança de estado de orçamento, pedido, lote de produção e impressora f
 - **Linha de orçamento**: modelo, quantidade, preço unitário, material opcional.
 - **Pedido**: número, cliente, orçamento de origem opcional, estado comercial, data prometida, frete digitado, embalagem digitada, linhas.
 - **Linha de pedido**: modelo, quantidade, preço unitário, material, cor escolhida, tamanho escolhido.
-- **Lote de produção**: pedido, linha, modelo, material, peças planejadas, peças concluídas, estado, gramas planejadas, minutos planejados.
-- **Reserva de material**: lote de produção, saldo, gramas reservadas.
+- **Lote de produção**: pedido, linha, modelo, material, peças planejadas, peças concluídas, estado, gramas planejadas, minutos planejados, peças por prancha, minutos por prancha e gramas por prancha preservados da liberação, inclusive para reimpressões.
+- **Reserva de material**: lote de produção, saldo, gramas reservadas. Na reimpressão, o complemento necessário é a diferença entre as gramas planejadas e a reserva restante, nunca menor que zero.
 - **Item de fila**: lote de produção, impressora opcional, prioridade, posição.
 - **Impressora**: nome, modelo, volume, taxa de hora-máquina, energia por hora, limite de horas de manutenção, horas acumuladas, minutos de preparação, materiais compatíveis, estado operacional, ativa ou não.
 - **Operador**: nome e usuário opcional.
-- **Execução**: lote de produção, impressora, operador, estado, início, fim, segundos pausados, motivo de falha, material real, minutos reais, lote de material, execução de origem quando for reimpressão.
+- **Execução**: lote de produção, impressora, operador, estado, início, fim, segundos pausados, motivo de falha, material real obrigatório também na falha e aceitando zero nesse caso, minutos reais, lote de material, execução de origem quando for reimpressão.
 - **Pedido de compra**: fornecedor, número, estado, linhas em quilos e preço.
 - **Recebimento**: pedido de compra, momento, linhas com lote de material e peso em gramas.
 - **Fatura**: pedido, número, valor, data, referência opcional.
@@ -260,7 +289,7 @@ Cada mudança de estado de orçamento, pedido, lote de produção e impressora f
 - O produto reimplementado é o núcleo descrito no software de referência (cadastros, comercial, produção, estoque, compras, financeiro simplificado e painel), mais a regra de prancha desta spec e os princípios da constituição: dois estados, custo explícito e dado fictício.
 - Kanban é interno. Não há quadro externo como fonte dos estados.
 - Início e fim de impressão são confirmados por pessoa. Não há leitura da máquina.
-- Tempo e material nascem do perfil de produção digitado. Não há importação de fatiador nesta entrega.
+- Tempo e material nascem do perfil de produção digitado e ficam preservados na liberação, inclusive para reimpressões. Alterações do perfil valem só para novas liberações. Não há importação de fatiador nesta entrega.
 - Calendário inicial: segunda a sexta, 08:00–18:00, no fuso da farm, configurável. A previsão mostra esse calendário como premissa.
 - Preparação é um único tempo em minutos cadastrado na impressora, depois da retirada, antes da máquina aceitar outro lote. Não separa troca de material, de bico ou de máquina.
 - Tamanho não muda peças por prancha nesta entrega. Ele fica registrado na linha quando o modelo oferece tamanhos.

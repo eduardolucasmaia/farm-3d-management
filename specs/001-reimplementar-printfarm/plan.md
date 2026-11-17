@@ -6,6 +6,8 @@
 
 **Revisão de 2026-11-17**: a stack mudou de .NET 8 + SQL Server para Node.js + TypeScript + SQLite (research.md item 1). Spec, contratos de rota e roteiros do quickstart não mudaram de comportamento.
 
+**Integração de 2026-11-17**: a revisão de desenho publicada em paralelo (clarify, plan, tasks e analyze sobre .NET) foi integrada. As cinco clarificações da spec e as regras derivadas entraram em data-model.md, contracts/, quickstart.md, research.md (itens 17 a 20) e tasks.md (T080–T088). As decisões específicas de .NET e SQL Server foram traduzidas para o desenho em SQLite; a lista de tarefas em C# foi substituída. `analysis.md` é o relatório daquela revisão; a situação de cada achado está em "Achados de analysis.md" abaixo.
+
 ## Summary
 
 Reimplementar o núcleo do PrintFarm (cadastro, orçamento, pedido, lote de produção, fila, execução, estoque, compra, fatura e painel) num código novo, sem copiar o legado. As regras de prancha, reserva integral, compatibilidade, dois estados e custo ficam em funções puras. A API e a SPA só traduzem. A primeira fatia demonstrável é o pedido aprovado virando 3 lotes na fila para 10 peças com 4 por prancha.
@@ -44,7 +46,7 @@ Conferido contra a constituição 2.0.0 em 2026-11-17, depois da troca de stack.
 | II | Orquestração com teste próprio, antes | Testes com SQLite `:memory:` em `server/tests/application/` | T026 antes de T027; T055 antes de T056; T069 antes de T070; T010 testa migração e rollback |
 | II | Roteiro por história | quickstart.md previsto | Seções 1 a 8 de quickstart.md, uma por história |
 | III. Dois estados | Nenhum estado derivado do outro | FR-014 | Duas tabelas de transição em data-model.md; T052 e T053; quickstart seção 5 passos 3 a 5 |
-| IV. Rastreio sem baixa duplicada | Saldo atômico e não repetível | FR-012 e FR-017 | T010 prova o rollback de `withTransaction`; T017 e T026 (saldo insuficiente, zero reservas; repetição recusada); T055 (saída única) |
+| IV. Rastreio sem baixa duplicada | Saldo atômico e não repetível | FR-012 e FR-017 | T010 prova o rollback de `withTransaction`; T017 e T026 (saldo insuficiente, zero reservas; repetição recusada); T055 (saída única, consumo acima da reserva sem tocar reserva alheia); T085 (Unreserve uma vez no cancelamento); T088 (disputas com duas conexões, research.md item 17) |
 | IV | Trilha em toda mudança de estado | FR-024 | T069, T070; `AuditLog` e `StockMovement` em data-model.md |
 | V. Estimativa explícita, dado fictício marcado | Sem total sem premissa, sem número inventado | FR-023, FR-005 | T063 (`total` nulo e `missingPremises`; parcelas arredondadas uma vez); T032 (limite de manutenção obrigatório, sem padrão) |
 | V | Exemplo marcado | FR-025 | `farm_settings.examples_are_fictional` com `CHECK (= 1)` (T010); quickstart seção 7 passo 5 |
@@ -54,6 +56,18 @@ Conferido contra a constituição 2.0.0 em 2026-11-17, depois da troca de stack.
 | VII | Nenhum segredo versionado | Constraints acima | T004 (`.env.example` sem valor de segredo; `.env` e `data/` ignorados); T006 recusa subir sem `JWT_SIGNING_KEY`; T011 (senha de semente só por variável, só em development) |
 
 Nenhuma violação. As duas observações da revisão anterior foram resolvidas: o teste de orquestração agora precede o caso de uso (T026 → T027, T055 → T056) e a recusa 403 tem teste automatizado (T013).
+
+## Achados de analysis.md
+
+| ID | Severidade | Situação neste desenho | Encaminhamento |
+|----|-----------|------------------------|----------------|
+| C1 | CRITICAL | Aberto. O cenário 9 da US1 (reimpressão preserva os parâmetros) só pode ser provado quando existir reimpressão (US5). A parte que a US1 consegue provar (perfil editado não muda lotes liberados) está em T083 | Mover o cenário 9 da US1 para a US5 por `/speckit.clarify`, ou aceitar a prova em T055. Decisão da equipe antes de mesclar a US1 |
+| I1 | HIGH | Aberto. A geração de pedido por orçamento recebe só a data prometida, mas cor e tamanho são obrigatórios quando o modelo os oferece | Decidir antes de T041: guardar cor e tamanho na linha do orçamento, ou pedir na geração do pedido. Corrigir contracts/comercial.md primeiro |
+| U1 | HIGH | Aberto. A previsão devolve horas pendentes e uma nota, sem término estimado verificável | Definir a saída de `GET /api/dashboard/backlog` antes de T064 |
+| G1 | MEDIUM | Parcial. Product já tem material padrão; falta o vínculo com o arquivo 3D | Acrescentar `File3DId` a Product em T034 (migração 0003) |
+| I2 | MEDIUM | Não se aplica: referia-se à numeração da lista em C# | — |
+| A1 | MEDIUM | Resolvido: valores inteiros em mg, prancha parcial arredondada para cima (research.md itens 6 e 11) | — |
+| A2 | MEDIUM | Aberto: `[NEEDS CLARIFICATION]` em data-model.md sobre horas de execução que falha | Responder antes de T052 |
 
 ## Project Structure
 
