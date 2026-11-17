@@ -1,6 +1,6 @@
 # Contract: Financeiro
 
-Sessão obrigatória. Escrita e leitura: Sales, Admin.
+Sessão obrigatória. Escrita e leitura: Sales, Admin. Convenções de erro, números e datas: contracts/auth.md. Valores em reais com até 2 casas.
 
 Não existe recurso de nota fiscal, boleto ou cobrança.
 

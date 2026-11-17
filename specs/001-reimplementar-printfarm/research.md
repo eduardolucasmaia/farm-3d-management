@@ -1,90 +1,140 @@
 # Research: Reimplementar o núcleo da farm
 
-**Feature**: `specs/001-reimplementar-printfarm`  
-**Date**: 2026-11-16
+**Feature**: `specs/001-reimplementar-printfarm`
+**Date**: 2026-11-16 | **Revisado**: 2026-11-17 (troca de .NET 8 + SQL Server por Node.js + TypeScript + SQLite)
 
-Cada item fecha uma escolha técnica. A spec não cita stack. Aqui a escolha fica escrita, com o que foi descartado.
+Cada item fecha uma escolha técnica. A spec não cita stack. Aqui a escolha fica escrita, com o que foi descartado. Quem implementa MUST seguir estes itens literalmente; mudar um deles é mudar o plan.
 
 ## 1. Stack da reimplementação
 
-- **Decision**: .NET 8 (ASP.NET Core) + Vue 3 + Vite + TypeScript + SQL Server + EF Core. Testes de regra em xUnit. Testes de tela mínimos em Vitest.
-- **Rationale**: O software de referência (`docs_apoio/software_ref/tecnica/arquitetura.md`) já descreve esse desenho e os comportamentos que a spec pede (reserva, orçamento, papéis). Reimplementar na mesma família permite comparar jornada com a documentação sem copiar o código, que não está neste repositório. A constituição exige núcleo puro: as regras ficam em `Farm3d.Domain`, sem EF e sem HTTP.
-- **Alternatives considered**: Um único script, como no laboratório da aula, não comporta papéis, estoque e fila. Outra stack (por exemplo Python + SPA) afastaria a comparação com o referência sem ganho para o experimento. Copiar o fonte do PrintFarm, se aparecesse, violaria "reimplementar".
+- **Decision**: Node.js 24 LTS ou mais novo, TypeScript, Fastify 5 na API, SQLite embutido do Node (`node:sqlite`), Vue 3 + Vite na SPA. Testes em Vitest nos dois lados. Um repositório com dois workspaces npm: `server/` e `web/`.
+- **Rationale**: Nenhum requisito da spec nem princípio da constituição depende de .NET. A máquina de desenvolvimento não tem o SDK do .NET nem Docker, e o SQL Server do desenho anterior dependia de Docker. Node já é obrigatório para a SPA: com ele no servidor a equipe tem uma linguagem, um gerenciador de pacotes e um executor de testes. Banco, hash de senha e execução de TypeScript já vêm no Node; não há instalação além de `npm install`.
+- **Alternatives considered**: .NET 8 + SQL Server, o desenho anterior, descartado por exigir SDK e Docker que a equipe não tem. Python + FastAPI, descartado por acrescentar uma segunda linguagem e um segundo executor de testes; o único ganho seria o `Decimal` nativo, resolvido no item 11. Copiar o fonte do PrintFarm, se aparecesse, violaria "reimplementar".
 
 ## 2. Onde vive cada regra
 
-- **Decision**: Funções puras em `src/Farm3d.Domain` para corte de prancha, compatibilidade, custo, máquinas de estado do lote e da impressora, e ordenação FIFO sobre uma lista já carregada. `Farm3d.Application` orquestra o caso de uso e a transação. `Farm3d.Infrastructure` persiste. `Farm3d.Api` e `web/` só traduzem.
-- **Rationale**: Princípio I da constituição. O teste vermelho da regra não sobe banco nem navegador.
-- **Alternatives considered**: Regra dentro do controller, como partes do legado fazem ao falar com o EF direto. Foi descartado porque o teste deixaria de ser só da regra.
+- **Decision**: Funções puras em `server/src/domain/` para corte de prancha, compatibilidade, custo, máquinas de estado, FIFO sobre lista já carregada, política de senha e travamento de login. `server/src/application/` orquestra o caso de uso e a transação. `server/src/infrastructure/` persiste, faz hash, assina token e roda o job. `server/src/api/` e `web/` só traduzem.
+- **Rationale**: Princípio I. O teste da regra não abre banco nem servidor HTTP.
+- **Regras de pureza** (verificadas pelo teste de arquitetura da tarefa T007): arquivo em `server/src/domain/` só importa caminho relativo que continue dentro de `server/src/domain/`; não importa `node:*` nem pacote npm; não chama `Date.now()`, `new Date()` sem argumento, `Math.random()`, `process` nem `console`. O instante atual chega como parâmetro `now`.
+- **Alternatives considered**: Regra no handler da rota. Descartado porque o teste deixaria de ser só da regra. Classe de entidade com método que muda o próprio estado. Descartado: a regra devolve o novo estado e o caso de uso grava, o que mantém a regra testável sem objeto persistido.
 
 ## 3. Persistência e ambiente local
 
-- **Decision**: SQL Server em Docker Compose para o desenvolvimento. Testes de orquestração de estoque usam EF Core InMemory. Não há segundo banco de jobs.
-- **Rationale**: O referência fixa SQL Server e transação nas mudanças de estoque e pedido. InMemory basta para provar reserva e recusa sem Docker no teste.
-- **Alternatives considered**: SQLite no desenvolvimento. Descartado porque tipo decimal, data com fuso e a comparação com o referência ficam mais fiéis no SQL Server. Hangfire foi descartado no item 5.
+- **Decision**: SQLite por `node:sqlite` (`DatabaseSync`), um arquivo em `FARM3D_DB_PATH` (padrão `data/farm3d.db`), uma conexão por processo, com `PRAGMA foreign_keys = ON`, `journal_mode = WAL` e `busy_timeout = 5000`. Sem ORM. SQL escrito à mão nos repositórios de `server/src/infrastructure/repositories/`. Testes de orquestração usam o mesmo SQLite em `:memory:` com todas as migrações aplicadas.
+- **Migrações**: arquivos `server/migrations/NNNN-nome.sql`, aplicados em ordem por `server/src/infrastructure/db/migrate.ts`, que registra cada um em `schema_migrations`. Migração já mesclada na branch base MUST NOT ser editada; mudança de esquema é arquivo novo. Os números 0001 a 0009 já estão reservados em `tasks.md`, um por história, para branches paralelas não colidirem.
+- **Transação**: `withTransaction(db, fn)` executa `BEGIN IMMEDIATE`, chama `fn` e faz `COMMIT`, ou `ROLLBACK` se `fn` lançar. `fn` MUST ser síncrona: se devolver `Promise`, o helper faz rollback e lança erro. Um `await` dentro da transação deixaria outra requisição usar a mesma conexão no meio dela.
+- **Rationale**: SQLite em memória executa transação de verdade, então o teste de "nenhuma reserva parcial" prova o rollback; o InMemory do EF Core não provava. Uma oficina com até 20 pessoas e 50 impressoras cabe em um escritor por vez.
+- **Alternatives considered**: SQL Server em Docker, descartado no item 1. PostgreSQL, descartado por exigir instalação e serviço. ORM (Prisma, Drizzle, TypeORM), descartado como estrutura sem regra que a exija e por esconder o SQL da transação. `better-sqlite3`, descartado porque exige compilação nativa e o Node já traz SQLite.
+- **Risco aceito**: `node:sqlite` ainda pode mudar de API entre versões do Node. Todo uso fica em `server/src/infrastructure/db/`; nenhum outro diretório o importa.
 
 ## 4. Identidade e papéis
 
-- **Decision**: ASP.NET Core Identity, senha com o hash do Identity, travamento de login após tentativas falhas, sessão por JWT Bearer. Papéis exatamente: Admin, Sales, Production, Purchasing, Operator. Seed de um usuário por papel, com senha só em configuração de desenvolvimento, nunca documentada como senha de produção.
-- **Rationale**: A spec pede identificação e os cinco papéis. O referência já separa assim. A spec também pede que admin crie usuário, lacuna da SPA legada, e isso entra em `UsersController`.
-- **Alternatives considered**: Sessão por cookie. Descartada porque a SPA e a API sobem separados no desenvolvimento, e o referência já usa bearer. Lista de papéis diferente da spec foi descartada.
+- **Decision**: Tabela `users` própria. Senha com `scrypt` de `node:crypto` (sal aleatório de 16 bytes, chave de 64 bytes, comparação com `timingSafeEqual`), guardada como `scrypt$<saltBase64>$<hashBase64>`. Um papel por usuário, exatamente: Admin, Sales, Production, Purchasing, Operator. Sessão por JWT HS256 assinado com `jose`, chave em `JWT_SIGNING_KEY` (mínimo 32 bytes), validade de 8 horas, `sub` = id do usuário e `role` = papel. A checagem de papel acontece no servidor, num `preHandler` por rota.
+- **Política de senha**: mínimo de 6 caracteres, com pelo menos uma maiúscula, uma minúscula, um dígito e um símbolo. Mesmos números do padrão do ASP.NET Identity que o desenho anterior herdava sem escrever.
+- **Travamento de login**: 5 falhas seguidas travam o usuário por 5 minutos. Login certo zera o contador. Durante o travamento a resposta é a mesma 401 genérica, sem dizer se o e-mail existe. Também são os números padrão do Identity.
+- **Semente**: um usuário por papel, criada só quando `NODE_ENV=development`, com a senha de `FARM3D_SEED_PASSWORD`. Sem essa variável a semente não roda.
+- **Rationale**: A spec pede identificação e os cinco papéis. O referência usa bearer. Hash e travamento como código explícito deixam os números visíveis e testáveis.
+- **Alternatives considered**: Sessão por cookie, descartada porque a SPA e a API sobem separados no desenvolvimento. `bcrypt` ou `argon2`, descartados porque exigem pacote nativo e o `scrypt` embutido atende. Biblioteca de autenticação completa (Passport, Auth.js), descartada como estrutura além da regra.
+- **Confirmado pelo mantenedor em 2026-11-17**: política de senha (6 caracteres e quatro classes), travamento (5 falhas, 5 minutos) e validade do token (8 horas). Mudar qualquer um desses números exige alterar este item antes do código.
 
 ## 5. Processamento periódico
 
-- **Decision**: Um `BackgroundService` na API, intervalo de uma hora, que expira orçamentos elegíveis e grava sugestões de recompra e a contagem de prazos. Sem Hangfire.
-- **Rationale**: A spec pede o efeito (expirar, sugerir, contar), não um painel de jobs. Hangfire traz armazenamento e painel que a constituição chama de complexidade além da regra. Um serviço hospedado cobre o intervalo horário descrito no módulo comercial do referência.
-- **Alternatives considered**: Hangfire, igual ao legado. Descartado pelo princípio VI: não acrescentar estrutura que a regra não exige. Disparo só manual foi descartado porque orçamento vencido ficaria aprovado até alguém lembrar.
+- **Decision**: `runHourlyPass(db, now)` em `server/src/infrastructure/jobs/hourly-farm-job.ts`, agendado com `setInterval` de uma hora no processo da API e também executado uma vez na subida. O script `npm run job:hourly --workspace server` executa uma passagem e sai; é o gancho de desenvolvimento citado no quickstart. A passagem expira orçamentos elegíveis, grava sugestões de recompra e grava a contagem de prazos.
+- **Rationale**: A spec pede o efeito (expirar, sugerir, contar), não um painel de jobs.
+- **Alternatives considered**: Biblioteca de fila ou cron (BullMQ, node-cron), descartada pelo princípio VI. Disparo só manual, descartado porque orçamento vencido ficaria aprovado até alguém lembrar.
 
 ## 6. Corte da prancha e prancha parcial
 
-- **Decision**: `LotSplit.Split(pieces, piecesPerPlate, minutesPerPlate, gramsPerPlate)` devolve a lista de lotes. Quantidade de lotes = teto(peças / peças por prancha). Lotes cheios levam os minutos e as gramas da prancha. O último, se incompleto, leva `peçasDoLote / peçasPorPrancha` de ambos. 10 e 4 produzem (4, 100%), (4, 100%), (2, 50%).
-- **Rationale**: A constituição manda a regra escrita antes da implementação. Proporção é a conta que fecha o cenário de referência sem inventar tempo mínimo.
-- **Alternatives considered**: Última prancha com tempo cheio. Descartada porque cobra capacidade que a prancha não usou. Recusar quantidade que não fecha prancha. Descartada porque o cenário de 10 com 4 deixaria de existir.
+- **Decision**: `splitLots(pieces, piecesPerPlate, secondsPerPlate, mgPerPlate)` em `server/src/domain/rules/lot-split.ts` devolve a lista de lotes. Quantidade de lotes = teto(peças / peças por prancha). Lotes cheios levam os segundos e os miligramas da prancha. O último, se incompleto, leva `peçasDoLote / peçasPorPrancha` de ambos, arredondado **para cima** ao segundo e ao miligrama inteiros. 10 e 4 produzem (4, 3600 s, 40000 mg), (4, 3600 s, 40000 mg), (2, 1800 s, 20000 mg).
+- **Rationale**: A proporção fecha o cenário de referência sem inventar tempo mínimo. Arredondar para cima nunca reserva menos material do que a prancha usa, o que segue o edge case "gramas reservadas não arredondam para esconder falta de saldo".
+- **Alternatives considered**: Última prancha com tempo cheio, descartada porque cobra capacidade que a prancha não usou. Recusar quantidade que não fecha prancha, descartada porque o cenário 10/4 deixaria de existir. Arredondamento ao mais próximo, descartado porque pode reservar 1 mg a menos.
 
 ## 7. Reserva FIFO
 
-- **Decision**: Função pura ordena lotes de material por `ReceivedAt` e depois por `Id`, e aloca gramas até cobrir o necessário. Se a soma do livre não cobre, devolve recusa e alocação vazia. A aplicação grava reservas e movimentações na mesma transação.
-- **Rationale**: FR-012. Ordem por data e desempate por identificador torna o teste estável.
-- **Alternatives considered**: Reserva parcial do que houver. A spec recusa. Média de custo sem lote. A spec exige o lote mais antigo.
+- **Decision**: `allocateFifo(neededMg, lots)` em `server/src/domain/rules/fifo-reservation.ts` ordena os lotes de material por `receivedAt` e depois por `id`, e aloca miligramas até cobrir o necessário. Se a soma do livre não cobre, devolve recusa e alocação vazia. O caso de uso grava reservas e movimentações na mesma transação.
+- **Rationale**: FR-012. Ordem por data e desempate por identificador tornam o teste estável. `receivedAt` em ISO-8601 UTC ordena corretamente também como texto.
+- **Alternatives considered**: Reserva parcial do que houver: a spec recusa. Média de custo sem lote: a spec exige o lote mais antigo.
 
 ## 8. Estados da impressora
 
-- **Decision**: Campo operacional novo, além de ativa/inativa. Transições só pelos eventos da spec (iniciar, concluir impressão, confirmar retirada, concluir preparação, entrar em manutenção, confirmar manutenção, marcar indisponível). O legado só tinha `IsActive` e "impressoras rodando" no painel. O estado operacional é exigência da constituição, não cópia do legado.
+- **Decision**: Campo operacional próprio, além de ativa/inativa. Transições só pelos eventos da spec (iniciar, concluir impressão, confirmar retirada, concluir preparação, entrar em manutenção, confirmar manutenção, marcar indisponível). O legado só tinha `IsActive` e "impressoras rodando" no painel. O estado operacional é exigência da constituição, não cópia do legado.
 - **Rationale**: Princípio III. Sem esse campo, "impressão concluída" vira "máquina livre".
-- **Alternatives considered**: Derivar o estado da execução aberta. Descartado porque a spec proíbe inferir um estado do outro. A retirada e a preparação não são uma execução.
+- **Alternatives considered**: Derivar o estado da execução aberta, descartado porque a spec proíbe inferir um estado do outro. A retirada e a preparação não são uma execução.
 
 ## 9. Motivos de falha
 
 - **Decision**: Lista fechada `None`, `BedAdhesion`, `Clog`, `LayerShift`, `OutOfMaterial`, `Other`.
-- **Rationale**: O dicionário do referência corta a lista em "BedAdhesion, Clog, … Other". A spec precisa de uma lista testável. Estes seis cobrem os nomes que o documento mostra e os dois casos que a operação de impressão 3D não consegue registrar sem eles (deslocamento e falta de material).
-- **Alternatives considered**: Texto livre. Descartado porque a spec pede lista fechada. Inventariar o enum no fonte do legado. O fonte não está neste repositório.
+- **Rationale**: O dicionário do referência corta a lista em "BedAdhesion, Clog, … Other". A spec precisa de uma lista testável. Estes seis cobrem os nomes que o documento mostra e os dois casos que a operação de impressão 3D não consegue registrar sem eles.
+- **Alternatives considered**: Texto livre, descartado porque a spec pede lista fechada. Inventariar o enum no fonte do legado: o fonte não está neste repositório.
 
 ## 10. Custo e calendário
 
-- **Decision**: `CostEstimate.Compute` recebe gramas, preço por grama, horas, kWh por hora, tarifa e taxa de hora-máquina. Qualquer premissa nula devolve lacuna, sem total. A taxa não inclui filamento nem energia; o tipo do resultado carrega essa frase. Previsão de término: horas pendentes dos lotes compatíveis com cada máquina disponível no calendário, em paralelo. Se todas as máquinas consideradas têm a mesma taxa de peças por hora no perfil em uso, o painel pode mostrar a aproximação "horas ÷ máquinas equivalentes" e MUST exibir essa frase. Calendário padrão segunda–sexta 08:00–18:00, gravado nos parâmetros da farm.
+- **Decision**: `estimateCost(input)` em `server/src/domain/rules/cost-estimate.ts` recebe miligramas, centavos por kg, segundos, Wh por hora, centavos por MWh e centavos por hora. Cada parcela é calculada exata e arredondada uma vez ao centavo, metade para cima. O total é a soma das três parcelas já arredondadas, para a tela somar o que mostra. Qualquer premissa nula devolve a lacuna, sem total. O resultado carrega a frase "A taxa de hora-máquina não inclui filamento nem energia."
+  - filamento = mg × centavosPorKg ÷ 1.000.000
+  - energia = segundos × WhPorHora × centavosPorMWh ÷ 3.600.000.000
+  - máquina = segundos × centavosPorHora ÷ 3.600
+- **Previsão de término**: horas pendentes dos lotes compatíveis com cada máquina disponível no calendário, em paralelo. Se todas as máquinas consideradas têm a mesma taxa de peças por hora no perfil em uso, o painel pode mostrar a aproximação "horas ÷ máquinas equivalentes" e MUST exibir essa frase.
+- **Calendário e fuso**: padrão segunda a sexta, 08:00–18:00, no fuso `America/Sao_Paulo`, gravados em `farm_settings` e editáveis. "Hoje" e "vencendo hoje" são calculados no fuso da farm com `Intl.DateTimeFormat`, fora do domínio, e entram na regra como data `AAAA-MM-DD`.
 - **Rationale**: FR-023 e princípio V.
-- **Alternatives considered**: Total sempre numérico com tarifa zero. A spec proíbe número sem premissa.
+- **Alternatives considered**: Total sempre numérico com tarifa zero: a spec proíbe número sem premissa. Total arredondado separado das parcelas: a soma exibida poderia diferir do total por um centavo.
 
-## 11. Dinheiro e gramas
+## 11. Dinheiro, peso e tempo
 
-- **Decision**: Dinheiro em `decimal`, quantizado a `0.01` com metade para cima. Gramas em `decimal` com três casas. Comparação de saldo usa o valor exato antes de quantizar a exibição.
-- **Rationale**: Edge case da spec. Três casas evitam que 0,001 g suma e libere uma reserva que não cabe.
-- **Alternatives considered**: `double`. Descartado em dinheiro e em saldo.
+- **Decision**: Todo valor gravado ou calculado no domínio é **inteiro**, numa escala fixa. Nenhum número fracionário entra no domínio.
+
+  | Grandeza | Unidade inteira | Sufixo no nome |
+  |----------|-----------------|----------------|
+  | Dinheiro | centavo | `Cents` |
+  | Preço ou custo por quilo | centavo por kg | `CentsPerKg` |
+  | Taxa de hora-máquina | centavo por hora | `CentsPerHour` |
+  | Tarifa de energia | centavo por MWh (R$ 0,65632/kWh = 65632) | `CentsPerMwh` |
+  | Peso | miligrama | `Mg` |
+  | Energia por hora | Wh por hora | `WhPerHour` |
+  | Tempo | segundo | `Seconds` |
+  | Diâmetro | micrômetro | `Um` |
+
+- **Aritmética**: multiplicação seguida de divisão passa por `mulDivRoundHalfUp` ou `mulDivCeil` de `server/src/domain/units.ts`, que calculam com `BigInt` e devolvem `number` inteiro seguro. Nenhum outro arquivo divide valores monetários ou de peso.
+- **Fronteira da API**: o JSON segue os contratos em unidades humanas (reais, gramas, minutos, kg, R$/kWh, kWh por hora). A rota converte na entrada com `parseScaled(valor, casas)`, que lê o número pela sua forma de texto e recusa com 400 casas decimais além do permitido, e na saída com `formatScaled`. Casas aceitas: dinheiro 2; gramas 3; quilos 6; minutos 2; tarifa por kWh 5; kWh por hora 3; diâmetro em mm 3.
+- **SQLite**: colunas desses valores são `INTEGER`. `SUM` e comparação em SQL são seguros porque o valor é inteiro.
+- **Rationale**: Edge case da spec: centavo metade para cima e três casas nas gramas. Inteiros evitam erro de ponto flutuante sem biblioteca decimal, e o SQLite não tem tipo decimal.
+- **Alternatives considered**: `number` fracionário, descartado em dinheiro e em saldo. Biblioteca decimal (`decimal.js`) com valor gravado como texto, descartada porque `SUM` e `ORDER BY` em SQL converteriam o texto para ponto flutuante sem aviso.
 
 ## 12. Arquivos 3D
 
-- **Decision**: Metadado e rótulo de versão. O arquivo em si fica em disco sob um diretório configurado, fora do banco. O banco guarda o caminho relativo.
+- **Decision**: Metadado e rótulo de versão no banco. O binário fica em disco sob `FARM3D_FILES_DIR` (padrão `data/files3d`), recebido por `@fastify/multipart`. O banco guarda o caminho relativo.
 - **Rationale**: A spec pede nome e versão, não processamento de malha.
-- **Alternatives considered**: Blob no banco. Descartado como complexidade sem regra que o exija.
+- **Alternatives considered**: Blob no banco, descartado como complexidade sem regra que o exija.
 
 ## 13. Testes que a constituição exige
 
-- **Decision**: Cada regra dos itens 6 a 10 nasce como teste xUnit vermelho em `src/Farm3d.Tests/Domain`. A orquestração de reserva com persistência nasce como teste em `src/Farm3d.Tests/Stock` com EF InMemory. Vitest cobre só o guarda de rota: usuário sem papel não abre a tela. O restante da jornada está em `quickstart.md`.
-- **Rationale**: Princípio II. A spec não pede suíte de ponta a ponta de HTTP.
-- **Alternatives considered**: Só teste manual. Viola a constituição. `WebApplicationFactory` para todo endpoint. Fica fora desta feature; o referência também não tinha.
+- **Decision**:
+  - Regra pura: Vitest em `server/tests/domain/`, escrito e visto falhando antes da regra.
+  - Orquestração: Vitest em `server/tests/application/`, com SQLite `:memory:` e migrações aplicadas, escrito antes do caso de uso.
+  - Pureza do núcleo: `server/tests/architecture/domain-purity.test.ts`.
+  - Acesso por papel: `server/tests/api/authz.test.ts` com `app.inject` do Fastify, cobrindo 401 sem sessão e 403 com papel errado.
+  - SPA: Vitest só no guarda de rota.
+  - O restante da jornada está em `quickstart.md`.
+- **Rationale**: Princípio II. O teste de 401 e 403 fecha a lacuna do princípio VII que o desenho anterior deixava só no roteiro manual.
+- **Alternatives considered**: Só teste manual: viola a constituição. Teste HTTP de todo endpoint: fica fora desta feature.
 
-## 14. O que não entra no desenho
+## 14. TypeScript sem etapa de build
 
-- **Decision**: Sem projeto de assistente, sem cliente de nota fiscal, sem SDK de impressora, sem fila automática.
-- **Rationale**: FR-026 e a seção "Fora de escopo" da constituição.
+- **Decision**: O servidor roda com o TypeScript nativo do Node (`node --env-file-if-exists=.env src/api/main.ts`), sem compilar. Isso impõe, e o `tsconfig.json` verifica com `erasableSyntaxOnly`:
+  - sem `enum` do TypeScript: cada enum é `export const X = { A: 'A', … } as const` mais `export type X = (typeof X)[keyof typeof X]`, com os valores exatos de `data-model.md`;
+  - sem `namespace` e sem propriedade declarada no parâmetro do construtor;
+  - import relativo com a extensão `.ts`; import só de tipo com `import type`.
+- **Verificação de tipos**: `npm run typecheck` (`tsc --noEmit`) nos dois workspaces, obrigatório verde junto com os testes.
+- **Rationale**: Uma etapa de build a menos e o mesmo arquivo roda no teste e na produção.
+- **Alternatives considered**: `tsc` para `dist/`, ou `tsx`, descartados como etapa ou dependência sem regra que a exija.
+
+## 15. Erros e respostas
+
+- **Decision**: A regra devolve `{ ok: true, value }` ou `{ ok: false, code, message }`, sem lançar exceção para recusa de negócio. A rota traduz `code` no status do contrato (400, 404 ou 409) e responde `application/problem+json` com `type`, `title`, `status`, `detail` e `code`. `message` é o texto estável citado nos contratos.
+- **Rationale**: Os contratos pedem "a regra violada em texto estável". Recusa como valor deixa o teste da regra conferir o código sem `try`.
+- **Alternatives considered**: Exceções tipadas: espalham `try` pelo caso de uso e escondem qual recusa cada regra pode dar.
+
+## 16. O que não entra no desenho
+
+- **Decision**: Sem módulo de assistente, cliente de nota fiscal, SDK ou leitura de impressora, fila automática, ORM, biblioteca de fila ou cron, nem pacote nativo compilado.
+- **Rationale**: FR-026 e a seção "Fora de escopo" da constituição; itens 3, 4 e 5 acima.
 - **Alternatives considered**: Deixar o endpoint de chat desligado. Mesmo desligado, o módulo seria estrutura sem regra. Não criar.

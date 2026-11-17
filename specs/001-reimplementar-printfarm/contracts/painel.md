@@ -1,6 +1,8 @@
 # Contract: Painel e parâmetros
 
-Sessão obrigatória. Leitura do painel: Admin, Production, Sales. Escrita dos parâmetros: Admin.
+Sessão obrigatória. Leitura do painel: Admin, Production, Sales. Escrita dos parâmetros: Admin. Convenções de erro, números e datas: contracts/auth.md.
+
+"Dia local" e "hoje" são calculados no fuso `timeZone` dos parâmetros. Valores de custo saem em reais com 2 casas.
 
 ## GET /api/dashboard
 
@@ -61,4 +63,4 @@ Itens: entityName, entityId, action, userId, at, fromStatus, toStatus.
 
 ## PUT /api/settings
 
-Admin. Corpo: energyTariffPerKwh nulo ou ≥ 0, calendarSummary não vazio, workDays, workStart, workEnd. Não aceita `examplesAreFictional: false` nesta feature; 400 se vier false.
+Admin. Corpo: energyTariffPerKwh nulo ou ≥ 0 (até 5 casas), calendarSummary não vazio, workDays (lista de 1 a 7, 1 = segunda), workStart e workEnd em `HH:mm`, timeZone (fuso IANA, por exemplo `America/Sao_Paulo`). Não aceita `examplesAreFictional: false` nesta feature; 400 se vier false.

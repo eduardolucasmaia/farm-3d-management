@@ -8,7 +8,9 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/, quickstart.md
 
-**Tests**: Entram nas regras de domínio. O princípio II da constituição exige o teste vermelho antes da regra. Jornada de tela fica em `specs/001-reimplementar-printfarm/quickstart.md`. Vitest cobre só o guarda de rota.
+**Revisado**: 2026-11-17, para a stack Node.js + TypeScript + SQLite (research.md item 1). Os IDs T001–T075 mantêm o propósito da versão .NET; caminhos e comandos mudaram. A antiga T072.5 virou T076. T077, T078 e T079 são novas.
+
+**Tests**: Entram nas regras de domínio, na orquestração e no acesso por papel. O princípio II da constituição exige o teste vermelho antes da regra. Jornada de tela fica em `specs/001-reimplementar-printfarm/quickstart.md`. Na SPA, Vitest cobre só o guarda de rota.
 
 **Organization**: Uma fase por história, na ordem de prioridade da spec. A história 1 é o MVP e usa semente; não espera as telas de cadastro da história 2.
 
@@ -20,41 +22,56 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ## Path Conventions
 
-- API e domínio: `src/Farm3d.*`
+- Servidor: `server/src/{domain,application,infrastructure,api}/`; testes em `server/tests/`
+- Migrações: `server/migrations/NNNN-nome.sql`, números reservados nesta lista
 - SPA: `web/src/`
 - Contratos: `specs/001-reimplementar-printfarm/contracts/`
 - Regras citadas entre aspas vêm de `specs/001-reimplementar-printfarm/data-model.md`
 
+## Regras para quem implementa
+
+Valem para toda tarefa abaixo, além das "Regras para agentes" da constituição.
+
+- Comandos: `npm test`, `npm run typecheck` e `npm run db:migrate` rodam a partir da raiz. Tarefa só vira `[X]` com `npm test` e `npm run typecheck` verdes na raiz.
+- TypeScript apagável (research.md item 14): sem `enum`, sem `namespace`, sem propriedade no parâmetro do construtor; import relativo com extensão `.ts`; `import type` para tipo.
+- Números: inteiros nas unidades de data-model.md "Unidades e representação". Divisão de dinheiro, peso ou tempo só por `server/src/domain/units.ts`. Conversão para unidade humana só na rota.
+- Domínio: `server/src/domain/` não importa nada fora de si, não lê relógio e não lança exceção para recusa de negócio; devolve `Result` de `server/src/domain/result.ts`.
+- Transação: `withTransaction` com função síncrona. Nenhum `await` dentro dela.
+- Banco: só `server/src/infrastructure/db/` importa `node:sqlite`. SQL só em `server/src/infrastructure/repositories/`. Migração mesclada não se edita.
+- Dependência nova só depois de registrada em plan.md ou research.md. Lista permitida no servidor: `fastify`, `@fastify/cors`, `@fastify/multipart`, `jose`, `typescript`, `vitest`, `@types/node`.
+
 ## Phase 1: Setup (Shared Infrastructure)
 
-**Purpose**: Solução, SPA e compose, sem regra de negócio
+**Purpose**: Workspaces, configuração e limpeza do desenho .NET, sem regra de negócio
 
-- [ ] T001 Criar `Farm3d.sln` e os projetos `src/Farm3d.Domain/Farm3d.Domain.csproj`, `src/Farm3d.Application/Farm3d.Application.csproj`, `src/Farm3d.Infrastructure/Farm3d.Infrastructure.csproj`, `src/Farm3d.Api/Farm3d.Api.csproj` e `src/Farm3d.Tests/Farm3d.Tests.csproj` em `net8.0`, com referências Domain ← Application ← Infrastructure ← Api e Tests referenciando Domain, Application e Infrastructure. Domain sem pacote de EF, HTTP ou UI
-- [ ] T002 [P] Criar `src/Directory.Build.props` com `Nullable` enable e `ImplicitUsings` enable
-- [ ] T003 [P] Criar a SPA em `web/` (Vue 3, Vite, TypeScript, Vue Router, Vitest) com scripts `dev`, `test` e `build` em `web/package.json`
-- [ ] T004 [P] Criar `docker-compose.yml` com o serviço `sql` (SQL Server 2022, porta 1433, senha só pela variável `MSSQL_SA_PASSWORD`) e `.env.example` listando `MSSQL_SA_PASSWORD`, `Jwt__SigningKey` e `FARM3D_SEED_PASSWORD`. Ignorar `.env` e `data/files3d/` no `.gitignore`
-- [ ] T005 [P] Criar `.editorconfig` na raiz com indentação de 4 espaços para C# e 2 para `web/**/*.vue`
-- [ ] T006 Criar `src/Farm3d.Api/appsettings.json` sem segredo e documentar em `.env.example` as chaves `ConnectionStrings__Farm3d` e `Jwt__SigningKey`. A API escuta `http://localhost:5088`
+- [X] T001 Criar `package.json` na raiz com `"private": true`, `"workspaces": ["server", "web"]`, `"engines": { "node": ">=24" }` e os scripts `test` (`npm test --workspaces`), `typecheck` (`npm run typecheck --workspaces`) e `db:migrate` (`npm run db:migrate --workspace server`). Criar `server/package.json` com `"type": "module"`, `"engines": { "node": ">=24" }`, as dependências listadas em "Regras para quem implementa" e os scripts `dev` (`node --watch --env-file-if-exists=../.env src/api/main.ts`), `start` (`node --env-file-if-exists=../.env src/api/main.ts`), `test` (`vitest run`), `typecheck` (`tsc --noEmit`), `db:migrate` (`node --env-file-if-exists=../.env src/infrastructure/db/migrate-cli.ts`) e `job:hourly` (`node --env-file-if-exists=../.env src/infrastructure/jobs/run-once.ts`). Remover os restos do desenho .NET: `Farm3d.sln`, a pasta `src/` inteira e `docker-compose.yml`
+- [X] T002 [P] Criar `server/tsconfig.json` com `strict`, `noEmit`, `target` `ES2023`, `module` e `moduleResolution` `nodenext`, `allowImportingTsExtensions`, `verbatimModuleSyntax`, `erasableSyntaxOnly`, `noUncheckedIndexedAccess` e `types: ["node"]`, incluindo `src`, `tests` e `vitest.config.ts`. Criar `server/vitest.config.ts` com `environment: 'node'` e `include: ['tests/**/*.test.ts']`
+- [X] T003 [P] A SPA em `web/` já existe (commit 675265c). Acrescentar em `web/package.json` o script `typecheck` (`vue-tsc --noEmit`) e conferir `dev`, `test` e `build`. Rodar `npm install` na raiz e versionar `package-lock.json`
+- [X] T004 [P] Reescrever `.env.example` só com nomes e valores não secretos: `NODE_ENV=development`, `PORT=5088`, `FARM3D_DB_PATH=data/farm3d.db`, `FARM3D_FILES_DIR=data/files3d`, `CORS_ORIGINS=http://localhost:5173`, `JWT_SIGNING_KEY=` e `FARM3D_SEED_PASSWORD=` vazios. Acrescentar a `.gitignore` as linhas `data/`, `*.db`, `*.db-wal`, `*.db-shm` e `__pycache__/`, e tirar do índice o `__pycache__` já versionado em `.specify/`
+- [X] T005 [P] Em `.editorconfig`, remover a seção `[*.cs]`
+- [X] T006 Criar `server/src/infrastructure/config.ts` que lê as variáveis de T004 uma vez e devolve um objeto tipado. Recusar a subida, com mensagem clara, se `JWT_SIGNING_KEY` faltar ou tiver menos de 32 bytes. `PORT` padrão 5088. `CORS_ORIGINS` separado por vírgula
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: Identidade, banco, casca da SPA e o job horário vazio
+**Purpose**: Pureza, unidades, banco, identidade, casca HTTP, casca da SPA e o job horário vazio
 
 **⚠️ CRITICAL**: Nenhuma história começa antes desta fase
 
-- [ ] T007 Escrever `src/Farm3d.Tests/Domain/DomainPurityTests.cs` lendo `src/Farm3d.Domain/Farm3d.Domain.csproj` e falhando se o texto contiver `EntityFramework`, `AspNetCore` ou `Vue`. Rodar e ver falhar só se a referência proibida existir; com o csproj de T001 o teste passa
-- [ ] T008 [P] Criar um arquivo por enum em `src/Farm3d.Domain/Enums/` com os valores exatos da tabela Enums de `specs/001-reimplementar-printfarm/data-model.md` (`AppRole`, `MaterialKind`, `QuoteStatus`, `CommercialOrderStatus`, `ProductionLotStatus`, `PrinterOperationalStatus`, `PrintRunStatus`, `PrintFailureReason`, `PurchaseOrderStatus`, `StockMovementKind`, `PaymentMethod`)
-- [ ] T009 [P] Criar `src/Farm3d.Domain/Entities/FarmSettings.cs` com `EnergyTariffPerKwh` opcional, `CalendarSummary` padrão `"segunda a sexta, 08:00–18:00"`, `WorkDays` segunda a sexta, `WorkStart` 08:00, `WorkEnd` 18:00 e `ExamplesAreFictional` verdadeiro sem caminho no domínio para gravar falso
-- [ ] T010 Criar `src/Farm3d.Infrastructure/Persistence/Farm3dDbContext.cs` com `FarmSettings` e Identity, e a migration inicial em `src/Farm3d.Infrastructure/Persistence/Migrations/`
-- [ ] T011 Implementar `src/Farm3d.Infrastructure/Identity/IdentitySeed.cs` com os papéis Admin, Sales, Production, Purchasing e Operator e os cinco e-mails de `specs/001-reimplementar-printfarm/quickstart.md`. A senha só é lida de `FARM3D_SEED_PASSWORD` quando o ambiente é Development
-- [ ] T012 Implementar `POST /api/auth/login` em `src/Farm3d.Api/Controllers/AuthController.cs` conforme `specs/001-reimplementar-printfarm/contracts/auth.md`, com travamento de login e 401 genérico
-- [ ] T013 Em `src/Farm3d.Api/Program.cs`, registrar JWT Bearer, Problem Details, CORS permissivo só em Development e a semente de T011
-- [ ] T014 Escrever primeiro `web/tests/route-guard.spec.ts` exigindo que visita a `/fila` sem sessão caia em `/entrar`. Depois implementar `web/src/router/index.ts` e `web/src/stores/session.ts` até o teste passar
-- [ ] T015 Criar `src/Farm3d.Infrastructure/Jobs/HourlyFarmJob.cs` como hosted service de uma hora, sem efeito ainda, e registrá-lo em `src/Farm3d.Api/Program.cs`
+- [X] T007 Escrever `server/tests/architecture/domain-purity.test.ts`: percorre todo `.ts` de `server/src/domain/` e falha se algum import não for relativo ou sair da pasta, se importar `node:*` ou pacote, ou se o texto contiver `Date.now(`, `new Date()`, `Math.random(`, `process.` ou `console.`. Falha também se a pasta não existir. Criar `server/src/domain/result.ts` com `type Result<T> = { ok: true; value: T } | { ok: false; code: string; message: string }` e os construtores `ok` e `fail`
+- [X] T008 [P] Criar `server/src/domain/enums.ts` com todos os enums da tabela Enums de `data-model.md`, cada um como objeto `as const` mais tipo união, com os valores exatos (`AppRole`, `MaterialKind`, `QuoteStatus`, `CommercialOrderStatus`, `ProductionLotStatus`, `PrinterOperationalStatus`, `PrintRunStatus`, `PrintFailureReason`, `PurchaseOrderStatus`, `StockMovementKind`, `PaymentMethod`)
+- [X] T009 [P] Escrever primeiro `server/tests/domain/units.test.ts` e ver falhar: `parseScaled('12.345', 3)` = 12345; `parseScaled('12.3456', 3)` recusa; `parseScaled('0.1', 2)` = 10; `formatScaled(13334, 3)` = `'13.334'`; `mulDivRoundHalfUp(5, 1, 10)` = 1 e `mulDivRoundHalfUp(4, 1, 10)` = 0; `mulDivCeil(40000, 1, 3)` = 13334; produto acima de `Number.MAX_SAFE_INTEGER` no meio da conta dá resultado exato; resultado final acima do limite recusa. Depois implementar `server/src/domain/units.ts` com `BigInt` interno até o teste passar
+- [X] T010 Escrever primeiro `server/tests/infrastructure/db.test.ts` e ver falhar: as migrações aplicam em `:memory:`; rodar de novo não aplica nada; arquivo novo com número menor que o último aplicado também é aplicado; `withTransaction` faz rollback quando a função lança e recusa com rollback quando a função devolve `Promise`; `farm_settings.examples_are_fictional = 0` é recusado pelo `CHECK`. Depois criar `server/src/infrastructure/db/database.ts` (`openDatabase(path)` com os `PRAGMA` de research.md item 3, `withTransaction`), `server/src/infrastructure/db/migrate.ts` (aplica, em ordem de nome, todo arquivo de `server/migrations/` ainda ausente de `schema_migrations`), `server/src/infrastructure/db/migrate-cli.ts` e `server/migrations/0001-foundation.sql` com `users` e `farm_settings` (linha única com os padrões de data-model.md, inclusive `time_zone`)
+- [X] T011 Escrever primeiro `server/tests/domain/password-policy.test.ts` e `server/tests/domain/login-lockout.test.ts` e ver falhar, com os números de research.md item 4 (6 caracteres e quatro classes; 5 falhas travam 5 minutos; login certo zera; travado continua travado até o instante). Depois implementar `server/src/domain/rules/password-policy.ts` e `server/src/domain/rules/login-lockout.ts`. Em seguida `server/src/infrastructure/auth/password.ts` (`scrypt` no formato de data-model.md, `timingSafeEqual`), `server/src/infrastructure/repositories/users-repo.ts` e `server/src/infrastructure/seed/identity-seed.ts` com um usuário por papel e os cinco e-mails de `quickstart.md`, só com `NODE_ENV=development` e `FARM3D_SEED_PASSWORD` presente
+- [X] T012 Implementar `POST /api/auth/login` em `server/src/api/routes/auth.ts` conforme `contracts/auth.md`, usando `login-lockout` e `server/src/infrastructure/auth/jwt.ts` (`jose`, HS256, 8 horas, `sub` e `role`). 401 sempre com a mesma mensagem
+- [X] T013 Criar `server/src/api/app.ts` com `buildApp({ db, config, now })`: verificação do Bearer, `requireRoles(...papéis)` como `preHandler`, tratador de erro em `application/problem+json` (research.md item 15), CORS só com `CORS_ORIGINS` (qualquer origem só em development) e registro das rotas. Criar `server/src/api/main.ts` que abre o banco, aplica migrações, roda a semente e escuta `PORT`. Escrever `server/tests/api/authz.test.ts` com `app.inject`: rota protegida sem token responde 401, com papel errado responde 403, com papel certo passa
+- [X] T014 Escrever primeiro `web/tests/route-guard.spec.ts` exigindo que visita a `/fila` sem sessão caia em `/entrar`. Depois ajustar `web/src/router/index.ts` e `web/src/stores/session.ts` até o teste passar
+- [X] T015 Criar `server/src/infrastructure/jobs/hourly-farm-job.ts` com `runHourlyPass(db, now)` ainda sem efeito, agendá-lo em `server/src/api/main.ts` com `setInterval` de uma hora e uma execução na subida, e criar `server/src/infrastructure/jobs/run-once.ts` para o script `job:hourly`
 
-**Checkpoint**: Login devolve token, a SPA desvia quem não entrou, `dotnet test` e `npm test` verdes
+- [X] T079 Criar `web/src/pages/EntrarPage.vue` (tela de entrada com e-mail e senha, que guarda a sessão e volta à rota pedida), `web/src/api.ts` (cliente HTTP com o Bearer da sessão e leitura do `detail` do problem+json) e `web/src/style.css`. Lacuna encontrada na implementação: nenhuma tarefa criava a tela de entrada que o guarda de T014 usa
+
+**Checkpoint**: Login devolve token, 401 e 403 testados, a SPA desvia quem não entrou, `npm test` e `npm run typecheck` verdes na raiz
 
 ---
 
@@ -66,24 +83,26 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ### Tests for User Story 1
 
-- [ ] T016 [P] [US1] Escrever `src/Farm3d.Tests/Domain/LotSplitTests.cs` falhando: 10 peças e 4 por prancha produzem 3 lotes; o último com metade do tempo e metade do material. Regra: "10 peças com 4 por prancha produzem 3 lotes, o último com metade do tempo e metade do material."
-- [ ] T017 [P] [US1] Escrever `src/Farm3d.Tests/Domain/FifoReservationTests.cs` falhando: o lote de material mais antigo é alocado primeiro; saldo que não cobre devolve alocação vazia. Regra: "Saldo insuficiente recusa a liberação inteira, sem reserva parcial."
-- [ ] T018 [P] [US1] Escrever `src/Farm3d.Tests/Domain/PrinterCompatibilityTests.cs` falhando: lista que não contém o material recusa; lista vazia aceita; impressora inativa ou ocupada recusa
+- [ ] T016 [P] [US1] Escrever `server/tests/domain/lot-split.test.ts` falhando: 10 peças, 4 por prancha, 3600 s e 40000 mg por prancha produzem (4, 3600, 40000), (4, 3600, 40000), (2, 1800, 20000); 10 peças com 3 por prancha arredondam a prancha parcial para cima (40000 mg ÷ 3 → 13334); peças por prancha menor que 1 recusa. Regra: "10 peças com 4 por prancha produzem 3 lotes, o último com metade do tempo e metade do material."
+- [ ] T017 [P] [US1] Escrever `server/tests/domain/fifo-reservation.test.ts` falhando: o lote de material com `receivedAt` mais antigo é alocado primeiro; empate por `id`; alocação atravessa lotes até cobrir; saldo que não cobre devolve recusa e alocação vazia. Regra: "Saldo insuficiente recusa a liberação inteira, sem reserva parcial."
+- [ ] T018 [P] [US1] Escrever `server/tests/domain/printer-compatibility.test.ts` falhando: lista que não contém o material recusa; lista vazia aceita; impressora inativa, fora de Available ou ocupada recusa
+- [ ] T077 [US1] Escrever `server/tests/domain/sales-order-state.test.ts` falhando: QuotePending vai só a Approved ou Cancelled; Cancelled não muda; não existe volta a QuotePending. Regra: "Pedido cancelado não muda mais de estado."
+- [ ] T026 [US1] Escrever `server/tests/application/release-lots.test.ts` com SQLite `:memory:` e migrações, falhando antes de T027: cenário 10/4 grava 3 lotes Released e as reservas; saldo insuficiente deixa zero linhas em `production_material_reservations` e saldo intacto; repetir a liberação recusa e não dobra o reservado; pedido QuotePending ou Cancelled recusa
 
 ### Implementation for User Story 1
 
-- [ ] T019 [P] [US1] Criar as entidades de catálogo e máquina usadas na liberação em `src/Farm3d.Domain/Entities/Color.cs`, `Product.cs`, `PrintProfile.cs`, `Printer.cs` e `PrinterMaterial.cs`. Perfil: "Peças por prancha, minutos por prancha e gramas por prancha, todos maiores que zero."
-- [ ] T020 [P] [US1] Criar `src/Farm3d.Domain/Entities/Material.cs`, `MaterialLot.cs`, `StockItem.cs` e `StockMovement.cs`. Saldo: `ReservedG` ≤ `QuantityG`. Livre = `QuantityG` − `ReservedG`
-- [ ] T021 [P] [US1] Criar `src/Farm3d.Domain/Entities/Customer.cs`, `SalesOrder.cs`, `OrderLine.cs`, `ProductionLot.cs`, `ProductionMaterialReservation.cs` e `PrintQueueItem.cs`
-- [ ] T022 [US1] Implementar `src/Farm3d.Domain/Rules/LotSplit.cs` até `LotSplitTests` passar
-- [ ] T023 [US1] Implementar `src/Farm3d.Domain/Rules/FifoReservation.cs` até `FifoReservationTests` passar. Desempate por `Id` depois de `ReceivedAt`
-- [ ] T024 [US1] Implementar `src/Farm3d.Domain/Rules/PrinterCompatibility.cs` até `PrinterCompatibilityTests` passar
-- [ ] T025 [US1] Mapear as entidades de T019–T021 em `src/Farm3d.Infrastructure/Persistence/Farm3dDbContext.cs` e adicionar a migration `ProductionLots`
-- [ ] T026 [US1] Implementar `src/Farm3d.Application/UseCases/ReleaseLots.cs` numa transação: corta a linha, reserva por `FifoReservation` e, se qualquer lote não couber, não grava reserva. Recusa pedido `QuotePending` ou `Cancelled`. Recusa repetir linha já reservada. Regra: "Repetir a liberação já reservada é recusado."
-- [ ] T027 [US1] Escrever `src/Farm3d.Tests/Stock/ReleaseLotsTests.cs` com EF InMemory cobrindo saldo insuficiente (zero linhas reservadas), repetição e o cenário 10/4, e só então ajustar `ReleaseLots` se o teste ainda falhar
-- [ ] T028 [US1] Implementar `src/Farm3d.Application/UseCases/EnqueueLot.cs` usando `PrinterCompatibility`
-- [ ] T029 [US1] Expor `POST /api/sales-orders/{id}/lots/release` e `POST /api/lots/{id}/queue` em `src/Farm3d.Api/Controllers/LotsController.cs` conforme `specs/001-reimplementar-printfarm/contracts/producao.md`, papéis Production e Admin
-- [ ] T030 [US1] Criar `src/Farm3d.Infrastructure/Identity/DemoSeed.cs` com o modelo "Suporte demo (fictício)", 4 peças, 60 min e 40 g por prancha, dois lotes de material e as impressoras "Mesa A" e "Mesa B" descritas na seção 1 de `quickstart.md`. Não rodar fora de Development
+- [ ] T019 [P] [US1] Criar os tipos de catálogo e máquina em `server/src/domain/entities/catalog.ts` (`Color`, `Product`, `PrintProfile`, `Printer`, `PrinterMaterial`), com os campos e unidades de data-model.md. Só tipos
+- [ ] T020 [P] [US1] Criar `server/src/domain/entities/stock.ts` (`Supplier`, `Material`, `MaterialLot`, `StockItem`, `StockMovement`). Só tipos
+- [ ] T021 [P] [US1] Criar `server/src/domain/entities/sales.ts` (`Customer`, `SalesOrder`, `OrderLine`) e `server/src/domain/entities/production.ts` (`ProductionLot`, `ProductionMaterialReservation`, `PrintQueueItem`). Só tipos
+- [ ] T022 [US1] Implementar `splitLots` em `server/src/domain/rules/lot-split.ts` até `lot-split.test.ts` passar
+- [ ] T023 [US1] Implementar `allocateFifo` em `server/src/domain/rules/fifo-reservation.ts` até `fifo-reservation.test.ts` passar
+- [ ] T024 [US1] Implementar `checkPrinterCompatibility` em `server/src/domain/rules/printer-compatibility.ts` até `printer-compatibility.test.ts` passar
+- [ ] T078 [US1] Implementar `transitionSalesOrder` em `server/src/domain/rules/sales-order-state.ts` até `sales-order-state.test.ts` passar. Expor `PATCH /api/sales-orders/{id}/status` em `server/src/api/routes/sales-orders.ts` só para a saída de QuotePending (Approved ou Cancelled), conforme `contracts/comercial.md`, papéis Sales e Admin
+- [ ] T025 [US1] Criar `server/migrations/0002-production-lots.sql` com as tabelas de T019–T021 (inclusive `suppliers`), colunas inteiras com o sufixo de unidade e `CHECK` dos enums. Criar `catalog-repo.ts`, `stock-repo.ts`, `sales-repo.ts` e `production-repo.ts` em `server/src/infrastructure/repositories/`
+- [ ] T027 [US1] Implementar `releaseLots` em `server/src/application/use-cases/release-lots.ts`, dentro de `withTransaction`: carrega, corta com `splitLots`, aloca com `allocateFifo`, grava lotes, reservas, `StockItem.ReservedMg` e movimentações `Reserve`. Qualquer lote que não caiba desfaz tudo. Até `release-lots.test.ts` passar. Regra: "Repetir a liberação já reservada é recusado."
+- [ ] T028 [US1] Implementar `enqueueLot` em `server/src/application/use-cases/enqueue-lot.ts` usando `checkPrinterCompatibility`
+- [ ] T029 [US1] Expor `POST /api/sales-orders/{id}/lots/release` e `POST /api/lots/{id}/queue` em `server/src/api/routes/lots.ts` conforme `contracts/producao.md`, papéis Production e Admin, com o corpo 409 de saldo insuficiente em gramas
+- [ ] T030 [US1] Criar `server/src/infrastructure/seed/demo-seed.ts` com o modelo "Suporte demo (fictício)", 4 peças, 60 min e 40 g por prancha, um fornecedor, dois lotes de material do mesmo insumo, as impressoras "Mesa A" e "Mesa B" e um pedido de 10 peças em QuotePending, conforme a seção 1 de `quickstart.md`. Só com `NODE_ENV=development`
 - [ ] T031 [US1] Criar `web/src/pages/PedidoPage.vue` e `web/src/pages/FilaPage.vue` para confirmar o pedido semeado, liberar e mostrar os 3 lotes com a marca de dado fictício
 
 **Checkpoint**: Seção 1 do quickstart passa. Parar aqui já é um MVP demonstrável
@@ -98,15 +117,15 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ### Tests for User Story 2
 
-- [ ] T032 [P] [US2] Escrever `src/Farm3d.Tests/Domain/MasterDataRulesTests.cs` falhando quando o limite de manutenção é zero ou ausente e quando peças por prancha são menores que 1. Regras: "Limite de horas de manutenção maior que zero." e "Peças por prancha, minutos por prancha e gramas por prancha, todos maiores que zero."
+- [ ] T032 [P] [US2] Escrever `server/tests/domain/master-data-rules.test.ts` falhando quando o limite de manutenção é zero ou ausente, quando peças por prancha são menores que 1, quando segundos ou miligramas por prancha não são maiores que zero e quando `hex` não é vazio nem `#RRGGBB`. Regras: "Limite de horas de manutenção maior que zero." e "Peças por prancha, minutos por prancha e gramas por prancha, todos maiores que zero."
 
 ### Implementation for User Story 2
 
-- [ ] T033 [US2] Fazer `Printer` e `PrintProfile` recusarem esses valores em `src/Farm3d.Domain/Entities/Printer.cs` e `PrintProfile.cs` até `MasterDataRulesTests` passar. `HourRateExcludesFilamentAndEnergy` permanece verdadeiro. Frase fixa: "A taxa de hora-máquina não inclui filamento nem energia."
-- [ ] T034 [P] [US2] Criar `src/Farm3d.Domain/Entities/Supplier.cs`, `Operator.cs`, `File3D.cs` e `File3DVersion.cs` e mapeá-los em `src/Farm3d.Infrastructure/Persistence/Farm3dDbContext.cs` com a migration `Masters`
-- [ ] T035 [US2] Implementar os controllers de `specs/001-reimplementar-printfarm/contracts/cadastros.md` em `src/Farm3d.Api/Controllers/` (`CustomersController`, `SuppliersController`, `ColorsController`, `MaterialsController`, `Files3DController`, `PrintProfilesController`, `ProductsController`, `PrintersController`, `OperatorsController`), com a matriz de papéis daquele contrato e `hex` só vazio ou `#RRGGBB`
-- [ ] T036 [US2] Implementar `POST /api/users` e `GET /api/users` em `src/Farm3d.Api/Controllers/UsersController.cs` conforme `specs/001-reimplementar-printfarm/contracts/auth.md`. Produção não cria usuário
-- [ ] T037 [US2] Guardar o binário da versão do arquivo 3D sob `data/files3d/` e só o caminho relativo em `File3DVersion.StoragePath`, no `Files3DController`
+- [ ] T033 [US2] Implementar `server/src/domain/rules/master-data-rules.ts` até `master-data-rules.test.ts` passar. `hourRateExcludesFilamentAndEnergy` é sempre `true`. Frase fixa: "A taxa de hora-máquina não inclui filamento nem energia."
+- [ ] T034 [P] [US2] Criar os tipos `Operator`, `File3D` e `File3DVersion` em `server/src/domain/entities/masters.ts`, a migração `server/migrations/0003-masters.sql` e `server/src/infrastructure/repositories/masters-repo.ts`
+- [ ] T035 [US2] Implementar as rotas de `contracts/cadastros.md`, um arquivo por recurso em `server/src/api/routes/cadastros/` (`customers.ts`, `suppliers.ts`, `colors.ts`, `materials.ts`, `files3d.ts`, `print-profiles.ts`, `products.ts`, `printers.ts`, `operators.ts`), com a matriz de papéis do contrato, validação por `master-data-rules` e conversão de unidades por `parseScaled` e `formatScaled`
+- [ ] T036 [US2] Implementar `POST /api/users` e `GET /api/users` em `server/src/api/routes/users.ts` conforme `contracts/auth.md`, usando `password-policy`. Produção não cria usuário
+- [ ] T037 [US2] Em `server/src/api/routes/cadastros/files3d.ts` e `server/src/infrastructure/files/file-store.ts`, guardar o binário da versão sob `FARM3D_FILES_DIR` com `@fastify/multipart` e só o caminho relativo em `File3DVersion.StoragePath`. Recusar caminho que saia do diretório
 - [ ] T038 [US2] Criar as páginas em `web/src/pages/cadastros/` para cliente, modelo, impressora e operador, escondendo a ação quando o papel da sessão não é o da escrita
 
 **Checkpoint**: Seção 2 do quickstart passa sem usar só a semente
@@ -121,15 +140,15 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ### Tests for User Story 3
 
-- [ ] T039 [P] [US3] Escrever `src/Farm3d.Tests/Domain/QuoteStateTests.cs` falhando nas transições ilegais e passando nas legais da seção Comercial de `data-model.md`. Incluir: validade vencida em Draft, Sent ou Approved vai a Expired; Rejected e OrderGenerated não expiram. Regra: "Rejeitado e pedido gerado não são expirados."
+- [ ] T039 [P] [US3] Escrever `server/tests/domain/quote-state.test.ts` falhando nas transições ilegais e passando nas legais da seção Comercial de `data-model.md`. Incluir: validade vencida no dia local em Draft, Sent ou Approved vai a Expired; Rejected e OrderGenerated não expiram; sem `validUntil` não expira. Regra: "Rejeitado e pedido gerado não são expirados."
 
 ### Implementation for User Story 3
 
-- [ ] T040 [US3] Criar `src/Farm3d.Domain/Entities/Quote.cs` e `QuoteLine.cs` e `src/Farm3d.Domain/Rules/QuoteState.cs` até `QuoteStateTests` passar. Subtotal quantizado ao centavo, metade para cima
-- [ ] T041 [US3] Implementar `src/Farm3d.Application/UseCases/QuoteLifecycle.cs` e `CreateOrderFromQuote.cs`: geração exige Approved, validade não vencida e `promisedDate`; segunda geração recusada; motivo de rejeição acrescentado a Notes como `Rejeição: …`
-- [ ] T042 [US3] Mapear Quote na migration `Quotes` em `src/Farm3d.Infrastructure/Persistence/Migrations/`
-- [ ] T043 [US3] Implementar os endpoints de `specs/001-reimplementar-printfarm/contracts/comercial.md` em `src/Farm3d.Api/Controllers/QuotesController.cs` e `SalesOrdersController.cs`, inclusive pedido manual em QuotePending e `PATCH` que não sai de Cancelled
-- [ ] T044 [US3] Em `src/Farm3d.Infrastructure/Jobs/HourlyFarmJob.cs`, expirar orçamentos elegíveis usando `QuoteState`. Orçamento sem `ValidUntil` não expira
+- [ ] T040 [US3] Criar os tipos `Quote` e `QuoteLine` em `server/src/domain/entities/commercial.ts` e `transitionQuote` em `server/src/domain/rules/quote-state.ts` até `quote-state.test.ts` passar. Subtotal = quantidade × `UnitPriceCents`, inteiro exato
+- [ ] T041 [US3] Implementar `server/src/application/use-cases/quote-lifecycle.ts` e `server/src/application/use-cases/create-order-from-quote.ts`: geração exige Approved, validade não vencida e `promisedDate`; segunda geração recusada; motivo de rejeição acrescentado a Notes como `Rejeição: …`
+- [ ] T042 [US3] Criar `server/migrations/0004-quotes.sql` e `server/src/infrastructure/repositories/quotes-repo.ts`
+- [ ] T043 [US3] Implementar os endpoints de orçamento de `contracts/comercial.md` em `server/src/api/routes/quotes.ts` e acrescentar a `server/src/api/routes/sales-orders.ts` o pedido manual em QuotePending, a geração por orçamento e o `PATCH` para Delivered. O `PATCH` de T078 não muda de comportamento
+- [ ] T044 [US3] Em `server/src/infrastructure/jobs/hourly-farm-job.ts`, expirar orçamentos elegíveis usando `transitionQuote`, com "hoje" no fuso de `farm_settings.time_zone`. Orçamento sem `validUntil` não expira
 - [ ] T045 [US3] Criar `web/src/pages/OrcamentosPage.vue` com a composição da linha (modelo, material, quantidade, subtotal) e a ação de gerar pedido
 
 **Checkpoint**: Seção 3 do quickstart passa. História 1 continua verde
@@ -144,14 +163,14 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ### Tests for User Story 4
 
-- [ ] T046 [P] [US4] Escrever `src/Farm3d.Tests/Domain/ReceiptMathTests.cs` falhando: peso ≤ 0 é recusado; 1 kg pedido completa com 1000 g; custo por grama = preço do quilo / 1000; recebimento acima do pedido é recusado. Regra: "Recebimento com peso zero ou negativo é recusado."
+- [ ] T046 [P] [US4] Escrever `server/tests/domain/receipt-math.test.ts` falhando: peso ≤ 0 é recusado; 1 kg pedido (1000000 mg) completa com 1000 g recebidos; o lote criado herda `CostCentsPerKg` do preço da linha; recebimento acima do pedido é recusado; sugestão de recompra = ponto − livre, mínimo zero, e nenhuma sem ponto de reposição. Regra: "Recebimento com peso zero ou negativo é recusado."
 
 ### Implementation for User Story 4
 
-- [ ] T047 [US4] Criar `src/Farm3d.Domain/Entities/PurchaseOrder.cs`, `PurchaseOrderLine.cs`, `PurchaseReceipt.cs` e `PurchaseReceiptLine.cs` e `src/Farm3d.Domain/Rules/ReceiptMath.cs` até o teste passar
-- [ ] T048 [US4] Implementar `src/Farm3d.Application/UseCases/ReceivePurchase.cs` criando `MaterialLot`, `StockItem` e `StockMovement` `PurchaseIn` na mesma transação, e o estado PartiallyReceived ou Received
-- [ ] T049 [US4] Migration `Purchasing` e endpoints de `specs/001-reimplementar-printfarm/contracts/estoque-compras.md` em `src/Farm3d.Api/Controllers/PurchaseOrdersController.cs` e `StockController.cs`
-- [ ] T050 [US4] Em `HourlyFarmJob`, gravar `RestockSuggestion` só quando `ReorderPointGrams` não é nulo e o livre está abaixo. `SuggestedOrderGrams` = ponto − livre, mínimo zero
+- [ ] T047 [US4] Criar os tipos `PurchaseOrder`, `PurchaseOrderLine`, `PurchaseReceipt`, `PurchaseReceiptLine` e `RestockSuggestion` em `server/src/domain/entities/purchasing.ts` e as regras `server/src/domain/rules/receipt-math.ts` e `server/src/domain/rules/restock.ts` até `receipt-math.test.ts` passar
+- [ ] T048 [US4] Implementar `server/src/application/use-cases/receive-purchase.ts` criando `MaterialLot`, `StockItem` e `StockMovement` `PurchaseIn` na mesma transação, e o estado PartiallyReceived ou Received
+- [ ] T049 [US4] Criar `server/migrations/0005-purchasing.sql` (inclusive `restock_suggestions`), `server/src/infrastructure/repositories/purchasing-repo.ts` e os endpoints de `contracts/estoque-compras.md` em `server/src/api/routes/purchase-orders.ts` e `server/src/api/routes/stock.ts`
+- [ ] T050 [US4] Em `hourly-farm-job.ts`, gravar `RestockSuggestion` com `restock.ts`, só quando `ReorderPointMg` não é nulo e o livre está abaixo
 - [ ] T051 [US4] Criar `web/src/pages/ComprasPage.vue` e `web/src/pages/EstoquePage.vue` mostrando livre, reservado e o código do lote de material
 
 **Checkpoint**: Seção 4 do quickstart passa. A reserva da história 1 passa a usar lote recebido de verdade
@@ -166,15 +185,15 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ### Tests for User Story 5
 
-- [ ] T052 [P] [US5] Escrever `src/Farm3d.Tests/Domain/PrinterStateTests.cs` falhando nas transições da seção "Transições da impressora" de `data-model.md`. Incluir: pausa não muda a impressora; horas acumuladas ≥ limite no fim da preparação levam a InMaintenance; nota vazia recusa a confirmação da manutenção
-- [ ] T053 [P] [US5] Escrever `src/Farm3d.Tests/Domain/LotStateTests.cs` falhando: falha sem reimpressão vai a Failed; falha com reimpressão volta a Queued; segunda conclusão é ilegal; confirmar retirada após execução concluída vai a Completed e após falha não muda o lote
+- [ ] T052 [P] [US5] Escrever `server/tests/domain/printer-state.test.ts` falhando nas transições da seção "Transições da impressora" de `data-model.md`. Incluir: pausa não muda a impressora; `AccumulatedSeconds` ≥ `MaintenanceLimitHours` × 3600 no fim da preparação leva a InMaintenance; nota vazia recusa a confirmação da manutenção
+- [ ] T053 [P] [US5] Escrever `server/tests/domain/lot-state.test.ts` falhando: falha sem reimpressão vai a Failed; falha com reimpressão volta a Queued; segunda conclusão é ilegal; confirmar retirada após execução concluída vai a Completed e após falha não muda o lote
+- [ ] T055 [US5] Escrever `server/tests/application/run-execution.test.ts` com SQLite `:memory:`, falhando antes de T056: a conclusão grava uma única `ProductionOut`; a segunda conclusão não grava movimento; falha sem reimpressão faz `Unreserve` do restante; falha com reimpressão mantém a reserva e cria `PrintRun` Planned ligada à anterior
 
 ### Implementation for User Story 5
 
-- [ ] T054 [US5] Criar `src/Farm3d.Domain/Entities/PrintRun.cs` e as regras `src/Farm3d.Domain/Rules/PrinterState.cs` e `LotState.cs` até os dois testes passarem
-- [ ] T055 [US5] Implementar `src/Farm3d.Application/UseCases/RunExecution.cs`: uma `ProductionOut` na conclusão com `actualMaterialG` > 0; segunda conclusão não grava movimento; falha sem reimpressão faz `Unreserve` do restante; falha com reimpressão mantém a reserva e cria `PrintRun` Planned com `ReprintOfPrintRunId`. Motivos só os de `PrintFailureReason`
-- [ ] T056 [US5] Escrever `src/Farm3d.Tests/Stock/RunExecutionTests.cs` com InMemory para a saída única e para a devolução da reserva, antes de considerar T055 pronto
-- [ ] T057 [US5] Migration `Runs` e os endpoints de execução, retirada, preparação, manutenção e falha em `src/Farm3d.Api/Controllers/RunsController.cs` e no `PrintersController`, conforme `specs/001-reimplementar-printfarm/contracts/producao.md`
+- [ ] T054 [US5] Criar o tipo `PrintRun` em `server/src/domain/entities/print-run.ts` e as regras `transitionPrinter` em `server/src/domain/rules/printer-state.ts` e `transitionLot` em `server/src/domain/rules/lot-state.ts` até os dois testes de domínio passarem
+- [ ] T056 [US5] Implementar `server/src/application/use-cases/run-execution.ts` até `run-execution.test.ts` passar: `ProductionOut` na conclusão com `actualMaterialG` > 0; horas acumuladas somam o tempo real sem a pausa; motivos só os de `PrintFailureReason`
+- [ ] T057 [US5] Criar `server/migrations/0006-runs.sql`, `server/src/infrastructure/repositories/runs-repo.ts`, as rotas de execução e falha em `server/src/api/routes/runs.ts` e as de retirada, preparação, manutenção e indisponível em `server/src/api/routes/printer-events.ts`, conforme `contracts/producao.md`
 - [ ] T058 [US5] Criar `web/src/pages/ExecucaoPage.vue` com iniciar, pausar, concluir, falhar, retirada e preparação, mostrando o estado do lote e o da impressora em campos separados
 
 **Checkpoint**: Seção 5 do quickstart passa. Máquina disponível só depois da preparação, e não com manutenção vencida
@@ -189,12 +208,12 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ### Tests for User Story 6
 
-- [ ] T059 [P] [US6] Escrever `src/Farm3d.Tests/Domain/BillingGuardTests.cs` falhando: pedido QuotePending ou Cancelled não aceita fatura nem pagamento; amount ≤ 0 é recusado. Regra: "Pedido em confirmação pendente não gera lote de produção, fatura nem pagamento."
+- [ ] T059 [P] [US6] Escrever `server/tests/domain/billing-guard.test.ts` falhando: pedido QuotePending ou Cancelled não aceita fatura nem pagamento; `AmountCents` ≤ 0 é recusado; meio fora de `PaymentMethod` é recusado. Regra: "Pedido em confirmação pendente não gera lote de produção, fatura nem pagamento."
 
 ### Implementation for User Story 6
 
-- [ ] T060 [US6] Criar `src/Farm3d.Domain/Entities/Invoice.cs` e `Payment.cs` e `src/Farm3d.Domain/Rules/BillingGuard.cs` até o teste passar. `PaymentMethod` só Cash, Card, Pix, BankTransfer, Other
-- [ ] T061 [US6] Migration `Billing` e endpoints de `specs/001-reimplementar-printfarm/contracts/financeiro.md` em `src/Farm3d.Api/Controllers/InvoicesController.cs` e `PaymentsController.cs`. Não criar recurso de nota fiscal
+- [ ] T060 [US6] Criar os tipos `Invoice` e `Payment` em `server/src/domain/entities/billing.ts` e `server/src/domain/rules/billing-guard.ts` até o teste passar
+- [ ] T061 [US6] Criar `server/migrations/0007-billing.sql`, `server/src/infrastructure/repositories/billing-repo.ts` e os endpoints de `contracts/financeiro.md` em `server/src/api/routes/billing.ts`. Não criar recurso de nota fiscal
 - [ ] T062 [US6] Criar `web/src/pages/FinanceiroPage.vue` com os lançamentos do pedido e sem ação de nota ou boleto
 
 **Checkpoint**: Seção 6 do quickstart passa
@@ -209,14 +228,14 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ### Tests for User Story 7
 
-- [ ] T063 [P] [US7] Escrever `src/Farm3d.Tests/Domain/CostEstimateTests.cs` falhando: total = filamento + energia + hora-máquina só quando tarifa, preço por grama, energia por hora e taxa existem; senão `total` é nulo e `missingPremises` lista o que falta. A frase do resultado é "A taxa de hora-máquina não inclui filamento nem energia."
-- [ ] T064 [P] [US7] Escrever `src/Farm3d.Tests/Domain/BacklogForecastTests.cs` falhando: atraso é data prometida anterior a hoje com lote em aberto; máquina AwaitingPickup não conta como em impressão; aproximação de máquinas equivalentes só com a frase de capacidades equivalentes
+- [ ] T063 [P] [US7] Escrever `server/tests/domain/cost-estimate.test.ts` falhando: cada parcela segue a fórmula de data-model.md e é arredondada uma vez ao centavo, metade para cima; total = soma das parcelas arredondadas, só quando tarifa, custo por kg, energia por hora e taxa existem; senão `total` é nulo e `missingPremises` lista o que falta. A frase do resultado é "A taxa de hora-máquina não inclui filamento nem energia."
+- [ ] T064 [P] [US7] Escrever `server/tests/domain/backlog-forecast.test.ts` falhando: atraso é data prometida anterior a hoje com lote em aberto; vencendo hoje compara a data recebida como "hoje"; máquina AwaitingPickup não conta como em impressão; aproximação de máquinas equivalentes só com a frase de capacidades equivalentes
 
 ### Implementation for User Story 7
 
-- [ ] T065 [US7] Implementar `src/Farm3d.Domain/Rules/CostEstimate.cs` e `BacklogForecast.cs` até os testes passarem
-- [ ] T066 [US7] Criar `src/Farm3d.Domain/Entities/DeadlineAlert.cs` e `RestockSuggestion.cs` (se a sugestão ainda não tiver entidade vinda de T050) e gravar `DeadlineAlert` em `HourlyFarmJob`
-- [ ] T067 [US7] Implementar `GET /api/dashboard`, `GET /api/lots/{id}/cost-estimate`, `GET /api/dashboard/backlog`, `GET /api/dashboard/restock-suggestions` e `PUT /api/settings` em `src/Farm3d.Api/Controllers/DashboardController.cs` e `SettingsController.cs` conforme `specs/001-reimplementar-printfarm/contracts/painel.md`. `examplesAreFictional: false` responde 400
+- [ ] T065 [US7] Implementar `estimateCost` em `server/src/domain/rules/cost-estimate.ts` e `forecastBacklog` em `server/src/domain/rules/backlog-forecast.ts` até os testes passarem
+- [ ] T066 [US7] Criar `server/migrations/0008-dashboard.sql` com `deadline_alerts`, o tipo `DeadlineAlert` em `server/src/domain/entities/dashboard.ts` e gravar o alerta em `hourly-farm-job.ts`, com "hoje" calculado no fuso da farm por `server/src/infrastructure/clock/farm-date.ts` (`Intl.DateTimeFormat`)
+- [ ] T067 [US7] Implementar `GET /api/dashboard`, `GET /api/lots/{id}/cost-estimate`, `GET /api/dashboard/backlog`, `GET /api/dashboard/restock-suggestions` e `PUT /api/settings` em `server/src/api/routes/dashboard.ts` e `server/src/api/routes/settings.ts` conforme `contracts/painel.md`, com `server/src/infrastructure/repositories/dashboard-repo.ts`. `examplesAreFictional: false` responde 400
 - [ ] T068 [US7] Criar `web/src/pages/PainelPage.vue` mostrando os contadores, a conta do custo, a premissa ausente e a marca de dado fictício em todo número de exemplo
 
 **Checkpoint**: Seção 7 do quickstart passa
@@ -231,13 +250,13 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ### Tests for User Story 8
 
-- [ ] T069 [P] [US8] Escrever `src/Farm3d.Tests/Stock/AuditTests.cs` falhando: liberar um lote grava trilha com estado anterior, estado novo e usuário. Regra: "Trilha guarda entidade, ação, usuário, momento, estado anterior e estado novo."
+- [ ] T069 [P] [US8] Escrever `server/tests/application/audit.test.ts` com SQLite `:memory:`, falhando: liberar um lote grava trilha com estado anterior, estado novo e usuário; o rollback da liberação também desfaz a trilha. Regra: "Trilha guarda entidade, ação, usuário, momento, estado anterior e estado novo."
 
 ### Implementation for User Story 8
 
-- [ ] T070 [US8] Criar `src/Farm3d.Domain/Entities/AuditLog.cs` e `src/Farm3d.Application/UseCases/AuditWriter.cs`, e chamá-lo nas mudanças de estado de orçamento, pedido, lote e impressora já implementadas
-- [ ] T071 [US8] Migration `Audit` e `GET /api/audit` em `src/Farm3d.Api/Controllers/AuditController.cs` conforme `specs/001-reimplementar-printfarm/contracts/painel.md`. Sales, Purchasing e Operator recebem 403
-- [ ] T072 [US8] Garantir em `ReceivePurchase` e `RunExecution` que a movimentação persiste kind, quantityG, unitCost e a origem. Regra: "Movimentação guarda tipo, gramas, custo unitário e origem."
+- [ ] T070 [US8] Criar `server/migrations/0009-audit.sql`, o tipo `AuditLog` em `server/src/domain/entities/audit.ts` e `server/src/application/use-cases/audit-writer.ts`, e chamá-lo, dentro da mesma transação, nas mudanças de estado de orçamento, pedido, lote e impressora já implementadas
+- [ ] T071 [US8] Implementar `GET /api/audit` em `server/src/api/routes/audit.ts` conforme `contracts/painel.md`, com `server/src/infrastructure/repositories/audit-repo.ts`. Sales, Purchasing e Operator recebem 403, coberto em `authz.test.ts`
+- [ ] T072 [US8] Garantir em `receive-purchase.ts` e `run-execution.ts` que a movimentação persiste kind, quantidade, custo unitário e a origem. Regra: "Movimentação guarda tipo, gramas, custo unitário e origem."
 
 **Checkpoint**: Seção 8 do quickstart passa
 
@@ -249,7 +268,8 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 - [ ] T073 [P] Atualizar `README.md` na raiz com o arranque de `specs/001-reimplementar-printfarm/quickstart.md` e a frase de que `docs_apoio/software_ref` não é código deste produto
 - [ ] T074 [P] Revisar `web/src/pages/` para que preço de venda e custo estimado não compartilhem o mesmo rótulo
-- [ ] T075 Rodar `dotnet test src/Farm3d.Tests/Farm3d.Tests.csproj` e `npm test` em `web/`, e executar a seção 1 de `quickstart.md` antes de chamar o MVP de pronto
+- [ ] T076 Verificar a ausência de módulos fora do escopo: buscar em `server/`, `web/` e nos `package.json` referências a NF-e, nota fiscal eletrônica, boleto, gateway de pagamento, cotação de frete, telemetria de impressora, otimização automática da fila, assistente de conversa, SDK de impressora, ORM, biblioteca de fila ou cron, e restos do desenho .NET (`.cs`, `.csproj`, `.sln`, `dotnet`). Nenhum resultado é esperado; qualquer achado bloqueia T075. Antes numerada T072.5
+- [ ] T075 Rodar `npm test` e `npm run typecheck` na raiz e executar a seção 1 de `quickstart.md` antes de chamar o MVP de pronto
 
 ---
 
@@ -260,32 +280,43 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 - **Setup (Phase 1)**: começa imediato
 - **Foundational (Phase 2)**: depende do Setup e bloqueia todas as histórias
 - **US1 (Phase 3)**: depende da fundação. Não depende das outras histórias
-- **US2 (Phase 4)**: depende da fundação. Pode seguir em paralelo com US1 no domínio, mas as telas de cadastro usam o mesmo `web/src/router/index.ts` — nesse arquivo, uma história de cada vez
-- **US3 (Phase 5)**: depende da fundação e das entidades de pedido da US1 (`SalesOrder`, `OrderLine`)
-- **US4 (Phase 6)**: depende da fundação e de `Material` / `MaterialLot` da US1
+- **US2 (Phase 4)**: depende da US1 (tabelas de catálogo da migração 0002)
+- **US3 (Phase 5)**: depende da US1 (`sales_orders`, `order_lines` e o `PATCH` de T078)
+- **US4 (Phase 6)**: depende da US1 (`materials`, `material_lots`, `stock_items`)
 - **US5 (Phase 7)**: depende da US1 (lote na fila e reserva)
-- **US6 (Phase 8)**: depende da US1 para o pedido confirmado; a guarda de QuotePending já existe no caso de uso da US3
+- **US6 (Phase 8)**: depende da US1 para o pedido confirmado
 - **US7 (Phase 9)**: depende de US1 e US5 para máquinas em impressão e de US4 para a sugestão já gravada
 - **US8 (Phase 10)**: depende dos casos de uso cujas transições vai registrar (US1, US3, US5)
 - **Polish**: depois das histórias que a entrega decidiu incluir
 
-### User Story Dependencies
-
-- **US1**: só a fundação. MVP
-- **US2**: fundação. Independente da US1 na prova, com os próprios cadastros
-- **US3**: fundação + pedido da US1. A prova de orçamento não precisa da fila
-- **US4**: fundação + material da US1. A prova de recebimento não precisa de orçamento
-- **US5**: US1. Não precisa de fatura nem de painel
-- **US6**: pedido confirmado (US1 ou US3). Não precisa da execução
-- **US7**: leituras sobre US1, US4 e US5. Sem eles o painel abre vazio e a prova da seção 7 não fecha
-- **US8**: atravessa as histórias já entregues. A prova mínima é a trilha da liberação da US1
-
 ### Within Each User Story
 
-- Teste da regra falha antes da função em `src/Farm3d.Domain/Rules/`
-- Entidades antes do caso de uso
-- Caso de uso antes do controller
-- Controller antes da página
+- Teste da regra falha antes da função em `server/src/domain/rules/`
+- Teste de orquestração falha antes do caso de uso em `server/src/application/use-cases/`
+- Tipos antes do caso de uso
+- Migração e repositório antes do caso de uso que grava
+- Caso de uso antes da rota
+- Rota antes da página
+
+### Migrações reservadas
+
+| Arquivo | Tarefa | História |
+|---------|--------|----------|
+| `0001-foundation.sql` | T010 | Fundação |
+| `0002-production-lots.sql` | T025 | US1 |
+| `0003-masters.sql` | T034 | US2 |
+| `0004-quotes.sql` | T042 | US3 |
+| `0005-purchasing.sql` | T049 | US4 |
+| `0006-runs.sql` | T057 | US5 |
+| `0007-billing.sql` | T061 | US6 |
+| `0008-dashboard.sql` | T066 | US7 |
+| `0009-audit.sql` | T070 | US8 |
+
+Uma história que precise de outra mudança de esquema usa o próximo número livre depois de 0009 e registra a linha nesta tabela.
+
+### Arquivos com mais de um escritor
+
+`server/src/api/app.ts` (registro de rotas), `server/src/api/main.ts`, `server/src/infrastructure/jobs/hourly-farm-job.ts`, `server/src/api/routes/sales-orders.ts`, `server/src/domain/entities/*.ts` já criados, `web/src/router/index.ts` e este `tasks.md`. Neles, uma tarefa por vez e só acréscimo, sem reformatar.
 
 ### Parallel Opportunities
 
@@ -294,23 +325,23 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 - T016, T017 e T018 em paralelo; T019, T020 e T021 em paralelo
 - T032 sozinho antes de T033; T034 em paralelo com T032
 - T039, T046, T052, T053, T059, T063, T064 e T069 podem ser escritos assim que a fundação existir, cada um no seu arquivo de teste
-- US2, US3 e US4 podem ser tocadas por pessoas diferentes depois da US1, desde que `Program.cs` e o router tenham um dono
+- US2, US3, US4, US5 e US6 podem ser tocadas por pessoas diferentes depois da US1, desde que `app.ts`, `hourly-farm-job.ts` e o router tenham um escritor por vez
 
 ---
 
 ## Parallel Example: User Story 1
 
 ```text
-T016 LotSplitTests.cs
-T017 FifoReservationTests.cs
-T018 PrinterCompatibilityTests.cs
+T016 lot-split.test.ts
+T017 fifo-reservation.test.ts
+T018 printer-compatibility.test.ts
 
-T019 entidades de catálogo
-T020 entidades de estoque
-T021 entidades de pedido e lote
+T019 entities/catalog.ts
+T020 entities/stock.ts
+T021 entities/sales.ts e entities/production.ts
 ```
 
-Os três testes não compilam até as funções existirem: o arquivo de teste referencia `LotSplit`, `FifoReservation` e `PrinterCompatibility`. Criar o teste e a classe vazia que lança `NotImplementedException` conta como vermelho.
+Um teste que importa uma regra inexistente falha na importação. Criar a regra exportando a função que devolve `fail('NOT_IMPLEMENTED', …)` conta como vermelho.
 
 ---
 
@@ -334,15 +365,14 @@ Os três testes não compilam até as funções existirem: o arquivo de teste re
 7. US6 → registro financeiro
 8. US7 → painel com premissa
 9. US8 → trilha
-10. T075
+10. T076 e T075
 
 ### Parallel Team Strategy
 
-1. Todos fecham Setup e Foundational
+1. Uma pessoa fecha Setup e Foundational
 2. Uma pessoa fica na US1 até o checkpoint
-3. Em seguida: uma em US2, uma em US3, uma em US4
-4. US5 só depois do checkpoint da US1
-5. US7 e US8 por último
+3. Em seguida: US2, US3, US4, US5 e US6 em branches separadas, uma pessoa por branch
+4. US7 e US8 por último
 
 ---
 
@@ -350,6 +380,7 @@ Os três testes não compilam até as funções existirem: o arquivo de teste re
 
 - [P] = outro arquivo, sem dependência incompleta
 - A história no rótulo amarra a tarefa à spec
+- Os IDs não seguem a ordem do arquivo em três pontos: T077 e T026 aparecem entre os testes da US1, T055 entre os testes da US5 e T076 antes de T075. A ordem de execução é a ordem do arquivo
 - Não copiar código de `docs_apoio/software_ref`; aquele diretório é leitura
-- Não criar projeto de assistente, cliente fiscal, SDK de impressora nem Hangfire
-- Commit ao fim de cada checkpoint, não no meio de um teste ainda vermelho por esquecimento
+- Não criar módulo de assistente, cliente fiscal, SDK de impressora, ORM nem biblioteca de fila
+- Commit ao fim de cada checkpoint, com `npm test` e `npm run typecheck` verdes

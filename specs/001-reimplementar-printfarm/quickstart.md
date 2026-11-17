@@ -4,30 +4,31 @@ Prova executável das histórias de `spec.md`. Números de exemplo são fictíci
 
 ## Pré-requisitos
 
-- .NET 8 SDK
-- Node.js 20 ou mais novo
-- Docker, para o SQL Server
+- Node.js 24 LTS ou mais novo (`node --version`)
+- Nada mais: sem .NET, sem Docker, sem servidor de banco. O banco é um arquivo SQLite em `data/farm3d.db`.
 
 Na raiz do repositório:
 
 ```powershell
 copy .env.example .env
-# preencher MSSQL_SA_PASSWORD, Jwt__SigningKey e FARM3D_SEED_PASSWORD
-docker compose up -d sql
-dotnet test src/Farm3d.Tests/Farm3d.Tests.csproj
-dotnet run --project src/Farm3d.Api
+# preencher JWT_SIGNING_KEY (32 caracteres ou mais) e FARM3D_SEED_PASSWORD
+# a senha de semente segue a política: 6+ caracteres, maiúscula, minúscula, dígito e símbolo
+npm install
+npm test
+npm run typecheck
+npm run db:migrate --workspace server
+npm run dev --workspace server
 ```
 
 Noutro terminal:
 
 ```powershell
-cd web
-npm install
-npm test
-npm run dev
+npm run dev --workspace web
 ```
 
-A API sobe em `http://localhost:5088`. A SPA em `http://localhost:5173`. Usuários semeados em Development: `admin@farm3d.local`, `vendas@farm3d.local`, `producao@farm3d.local`, `compras@farm3d.local`, `operador@farm3d.local`. A senha é a de `FARM3D_SEED_PASSWORD`.
+Para recomeçar do zero, apague `data/farm3d.db` e rode `npm run db:migrate --workspace server` de novo.
+
+A API sobe em `http://localhost:5088`. A SPA em `http://localhost:5173`. Usuários semeados em Development: `admin@farm3d.local`, `vendas@farm3d.local`, `producao@farm3d.local`, `compras@farm3d.local`, `operador@farm3d.local`. A senha é a de `FARM3D_SEED_PASSWORD`. A semente só roda com `NODE_ENV=development`.
 
 Os testes automatizados MUST estar verdes antes das seções manuais. Cada seção vale sozinha se a semente da história estiver aplicada.
 
@@ -42,7 +43,7 @@ Semente fictícia: modelo "Suporte demo (fictício)", 4 peças por prancha, 60 m
 5. Repetir a liberação. Esperado: recusa, reserva não dobra.
 6. Zerar o saldo livre num segundo pedido igual. Esperado: liberação recusada e nenhuma reserva parcial.
 
-`dotnet test` cobre o corte 10/4, a recusa por saldo e a incompatibilidade sem abrir o navegador.
+`npm test --workspace server` cobre o corte 10/4, a recusa por saldo e a incompatibilidade sem abrir o navegador.
 
 ## 2. Papéis e cadastros (US2)
 
@@ -57,7 +58,7 @@ Semente fictícia: modelo "Suporte demo (fictício)", 4 peças por prancha, 60 m
 2. Gerar pedido com data prometida. Esperado: pedido confirmado, orçamento em pedido gerado.
 3. Gerar de novo. Esperado: recusa e um único pedido.
 4. Rejeitar outro orçamento com motivo. Esperado: motivo nas observações e nenhuma geração.
-5. Aprovar um terceiro com validade no passado e esperar o processamento horário (ou o gancho de desenvolvimento que dispara uma passagem). Esperado: expirado, sem pedido.
+5. Aprovar um terceiro com validade no passado e esperar o processamento horário (ou rodar `npm run job:hourly --workspace server`, que dispara uma passagem). Esperado: expirado, sem pedido.
 6. Criar pedido manual. Esperado: confirmação pendente. Liberar lote, faturar ou pagar. Esperado: as três recusas. Confirmar o pedido. Esperado: confirmado. Cancelar um outro e tentar mudar o estado. Esperado: recusa.
 
 ## 4. Compra e recebimento (US4)
@@ -65,7 +66,7 @@ Semente fictícia: modelo "Suporte demo (fictício)", 4 peças por prancha, 60 m
 1. Como `compras@farm3d.local`, criar pedido de 1 kg de filamento e receber 400 g com código de lote. Esperado: lote de material com 400 g, pedido parcialmente recebido, custo por grama = preço do quilo / 1000.
 2. Receber 0 g. Esperado: recusa.
 3. Receber os 600 g restantes. Esperado: pedido recebido.
-4. Material com ponto de reposição acima do livre, depois de uma passagem periódica. Esperado: sugestão com o saldo livre e a diferença até o ponto.
+4. Material com ponto de reposição acima do livre, depois de uma passagem periódica (`npm run job:hourly --workspace server`). Esperado: sugestão com o saldo livre e a diferença até o ponto.
 
 ## 5. Dois estados (US5)
 
@@ -100,6 +101,6 @@ Semente fictícia: modelo "Suporte demo (fictício)", 4 peças por prancha, 60 m
 
 ## Pronto quando
 
-- `dotnet test` verde, incluindo o cenário 10 peças / 4 por prancha e a reserva recusada.
-- `npm test` em `web/` verde no guarda de rota.
+- `npm test` na raiz verde nos dois workspaces, incluindo o cenário 10 peças / 4 por prancha, a reserva recusada, o 401 e o 403, e o guarda de rota da SPA.
+- `npm run typecheck` na raiz verde.
 - As oito seções acima conferidas, ou só a seção 1 se a entrega parou no MVP.
