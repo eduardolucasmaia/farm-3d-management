@@ -1,0 +1,6 @@
+{
+  "ai": "opencode",
+  "integration": "opencode",
+  "script": "py",
+  "speckit_version": "1.4.1"
+}

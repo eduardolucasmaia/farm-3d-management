@@ -1,0 +1,31 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Build outputs
+bin/
+obj/
+dist/
+build/
+
+# Dependencies
+node_modules/
+packages/
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Data
+data/files3d/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
