@@ -247,6 +247,7 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 **Purpose**: Fechar a prova e a leitura de quem chega agora
 
+- [ ] T072.5 [US6] Verificar ausência de módulos fora do escopo: buscar em todo o código referências a NF-e, nota fiscal eletrônica, boleto, gateway de pagamento, cotação de frete, telemetria de impressora, otimização automática da fila, assistente de conversa, Hangfire ou SDK de impressora. Nenhum resultado é esperado; qualquer achado é um bloqueio para T073
 - [ ] T073 [P] Atualizar `README.md` na raiz com o arranque de `specs/001-reimplementar-printfarm/quickstart.md` e a frase de que `docs_apoio/software_ref` não é código deste produto
 - [ ] T074 [P] Revisar `web/src/pages/` para que preço de venda e custo estimado não compartilhem o mesmo rótulo
 - [ ] T075 Rodar `dotnet test src/Farm3d.Tests/Farm3d.Tests.csproj` e `npm test` em `web/`, e executar a seção 1 de `quickstart.md` antes de chamar o MVP de pronto
