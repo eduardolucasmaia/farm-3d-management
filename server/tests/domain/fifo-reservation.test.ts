@@ -33,7 +33,7 @@ describe('allocateFifo (FR-012)', () => {
   it('saldo que não cobre devolve recusa e nenhuma alocação', () => {
     expect(allocateFifo(70000, [older])).toMatchObject({
       ok: false,
-      code: 'INSUFFICIENT_STOCK',
+      code: 'INSUFFICIENT_MATERIAL',
       details: { neededMg: 70000, freeMg: 60000 },
     })
   })

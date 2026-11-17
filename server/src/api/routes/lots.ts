@@ -27,7 +27,7 @@ export function registerLotRoutes(app: FastifyInstance, deps: AppDeps): void {
       })
       if (!result.ok) {
         const extra =
-          result.code === 'INSUFFICIENT_STOCK' && result.details
+          result.code === 'INSUFFICIENT_MATERIAL' && result.details
             ? {
                 lotIndex: result.details.lotIndex,
                 neededGrams: grams(Number(result.details.neededMg)),
@@ -44,6 +44,9 @@ export function registerLotRoutes(app: FastifyInstance, deps: AppDeps): void {
           qtyPlanned: lot.qtyPlanned,
           plannedGrams: grams(lot.plannedMg),
           plannedMinutes: minutes(lot.plannedSeconds),
+          releasedPiecesPerPlate: lot.releasedPiecesPerPlate,
+          releasedMinutesPerPlate: minutes(lot.releasedSecondsPerPlate),
+          releasedGramsPerPlate: grams(lot.releasedMgPerPlate),
           status: lot.status,
         })),
       })
@@ -74,7 +77,8 @@ export function registerLotRoutes(app: FastifyInstance, deps: AppDeps): void {
         now: deps.now(),
       })
       if (!result.ok) return sendProblem(reply, statusForCode(result.code), result.code, result.message)
-      return reply.code(201).send(result.value)
+      const { created, ...body } = result.value
+      return reply.code(created ? 201 : 200).send(body)
     },
   )
 
@@ -101,9 +105,15 @@ export function registerLotRoutes(app: FastifyInstance, deps: AppDeps): void {
         qtyPlanned: lot.qty_planned,
         plannedGrams: grams(lot.planned_mg),
         plannedMinutes: minutes(lot.planned_seconds),
+        reservedGrams: grams(lot.reserved_mg),
+        missingMaterialG: grams(Math.max(0, lot.planned_mg - lot.reserved_mg)),
+        releasedPiecesPerPlate: lot.released_pieces_per_plate,
+        releasedMinutesPerPlate: minutes(lot.released_seconds_per_plate),
+        releasedGramsPerPlate: grams(lot.released_mg_per_plate),
         status: lot.status,
         printerId: lot.printer_id,
         printerName: lot.printer_name,
+        priority: lot.priority,
         position: lot.position,
       }))
     },
