@@ -162,6 +162,10 @@ CREATE TABLE production_lots (
     ('AwaitingPlanning', 'Released', 'Queued', 'Printing', 'Paused', 'AwaitingPickup', 'Completed', 'Failed', 'Cancelled')),
   planned_mg INTEGER NOT NULL CHECK (planned_mg > 0),
   planned_seconds INTEGER NOT NULL CHECK (planned_seconds > 0),
+  -- Parâmetros da prancha preservados na liberação (T080; research.md item 19).
+  released_pieces_per_plate INTEGER NOT NULL CHECK (released_pieces_per_plate >= 1),
+  released_seconds_per_plate INTEGER NOT NULL CHECK (released_seconds_per_plate > 0),
+  released_mg_per_plate INTEGER NOT NULL CHECK (released_mg_per_plate > 0),
   created_at TEXT NOT NULL,
   released_at TEXT,
   completed_at TEXT,
@@ -172,7 +176,8 @@ CREATE TABLE production_material_reservations (
   id INTEGER PRIMARY KEY,
   production_lot_id INTEGER NOT NULL REFERENCES production_lots(id),
   stock_item_id INTEGER NOT NULL REFERENCES stock_items(id),
-  reserved_mg INTEGER NOT NULL CHECK (reserved_mg > 0)
+  reserved_mg INTEGER NOT NULL CHECK (reserved_mg > 0),
+  UNIQUE (production_lot_id, stock_item_id)
 );
 
 CREATE TABLE print_queue_items (

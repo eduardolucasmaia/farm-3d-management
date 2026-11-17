@@ -4,7 +4,7 @@
 **Fontes**: constituição 2.0.1, os artefatos de `specs/001-reimplementar-printfarm/` e o código em `server/` e `web/`
 **Feature ativa**: `specs/001-reimplementar-printfarm` (de `.specify/feature.json`)
 **Stack**: Node.js 24+, TypeScript 5.9 sem build, Fastify 5, `node:sqlite`, Vue 3, Vitest 4.1.12+ (plan.md e research.md)
-**Progresso**: 34 de 79 tarefas concluídas (Setup, Fundação, US1 e T079)
+**Progresso**: 38 de 88 tarefas concluídas (Setup, Fundação, US1, T079–T083). Desenho integrado com a revisão paralela em 2026-11-17 (research.md itens 17–20; T084–T088 pendentes)
 
 ## Como usar
 
@@ -91,11 +91,12 @@ declara em tabela.
 |----------|-----------|----|---------|-------|------------|--------|
 | Setup | — | — | T001–T006 | — | — | ✅ |
 | Fundação | — | FR-001 (login, papéis, guarda) | T007–T015, T079 | checkpoint da fase 2 | Setup | ✅ |
-| US1 Pedido vira lotes na fila | P1 (MVP) | FR-009 (confirmação), FR-011, FR-012, FR-013 | T016–T031, T077, T078 | QS 1 | Fundação | ✅ QS 1 conferida |
+| US1 Pedido vira lotes na fila | P1 (MVP) | FR-009 (confirmação), FR-011, FR-012, FR-013 | T016–T031, T077, T078, T080–T083 | QS 1 | Fundação | ✅ QS 1 conferida; liberação já enfileira, parâmetros da prancha preservados |
 | US2 Base da operação | P2 | FR-001, FR-002, FR-003, FR-004, FR-005 | T032–T038 | QS 2 | US1 (migração 0002) | pendente |
 | US3 Orçamento vira um pedido | P2 | FR-006, FR-007, FR-008, FR-009, FR-010 | T039–T045 | QS 3 | US1 | pendente |
 | US4 Compra entra em lote de material | P2 | FR-019, FR-020 | T046–T051 | QS 4 | US1 | pendente |
-| US5 Executar sem liberar a máquina cedo | P3 | FR-013, FR-014, FR-015, FR-016, FR-017, FR-018 | T052–T058 | QS 5 | US1 | pendente |
+| US5 Executar sem liberar a máquina cedo | P3 | FR-013, FR-014, FR-015, FR-016, FR-017, FR-018 | T052–T058, T086–T088 | QS 5 | US1 | pendente |
+| Cancelamento de pedido (fase 8.5) | — | FR-009 | T084, T085 | QS 3 passos 7–8 | US3, US5, US6 | pendente |
 | US6 Fatura e pagamento | P3 | FR-021, FR-009 | T059–T062 | QS 6 | US1 | pendente |
 | US7 Painel com premissa | P3 | FR-022, FR-023, FR-025 | T063–T068 | QS 7 | US1, US4, US5 | pendente |
 | US8 Trilha | P4 | FR-024 | T069–T072 | QS 8 | US1, US3, US5 | pendente |

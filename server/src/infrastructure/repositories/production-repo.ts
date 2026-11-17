@@ -13,6 +13,9 @@ export interface LotRow {
   status: ProductionLotStatus
   planned_mg: number
   planned_seconds: number
+  released_pieces_per_plate: number
+  released_seconds_per_plate: number
+  released_mg_per_plate: number
 }
 
 export interface LotListRow extends LotRow {
@@ -21,7 +24,17 @@ export interface LotListRow extends LotRow {
   material_name: string
   printer_id: number | null
   printer_name: string | null
+  priority: number | null
   position: number | null
+  reserved_mg: number
+}
+
+export interface QueueItemRow {
+  id: number
+  production_lot_id: number
+  printer_id: number | null
+  priority: number
+  position: number
 }
 
 export function releasedLineIds(db: Db, orderId: number): Set<number> {
@@ -47,6 +60,9 @@ export function insertLot(
     status: ProductionLotStatus
     plannedMg: number
     plannedSeconds: number
+    releasedPiecesPerPlate: number
+    releasedSecondsPerPlate: number
+    releasedMgPerPlate: number
     createdAt: string
     releasedAt: string | null
   },
@@ -55,8 +71,9 @@ export function insertLot(
     db
       .prepare(
         `INSERT INTO production_lots (sales_order_id, order_line_id, product_id, material_id, lot_index, qty_planned,
-           qty_completed, status, planned_mg, planned_seconds, created_at, released_at)
-         VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)`,
+           qty_completed, status, planned_mg, planned_seconds, released_pieces_per_plate, released_seconds_per_plate,
+           released_mg_per_plate, created_at, released_at)
+         VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         lot.salesOrderId,
@@ -68,6 +85,9 @@ export function insertLot(
         lot.status,
         lot.plannedMg,
         lot.plannedSeconds,
+        lot.releasedPiecesPerPlate,
+        lot.releasedSecondsPerPlate,
+        lot.releasedMgPerPlate,
         lot.createdAt,
         lot.releasedAt,
       ).lastInsertRowid,
@@ -88,6 +108,10 @@ export function updateLotStatus(db: Db, id: number, status: ProductionLotStatus)
   db.prepare('UPDATE production_lots SET status = ? WHERE id = ?').run(status, id)
 }
 
+export function getQueueItem(db: Db, lotId: number): QueueItemRow | undefined {
+  return db.prepare('SELECT * FROM print_queue_items WHERE production_lot_id = ?').get(lotId) as QueueItemRow | undefined
+}
+
 /** Acrescenta o lote ao fim da fila. Devolve a posição. */
 export function insertQueueItem(db: Db, lotId: number, printerId: number | null, priority: number, now: string): number {
   const position =
@@ -98,8 +122,19 @@ export function insertQueueItem(db: Db, lotId: number, printerId: number | null,
   return position
 }
 
+/** Atualiza impressora e prioridade do item existente, sem mudar a posição. */
+export function updateQueueItem(db: Db, lotId: number, printerId: number | null, priority: number): void {
+  db.prepare('UPDATE print_queue_items SET printer_id = ?, priority = ? WHERE production_lot_id = ?').run(
+    printerId,
+    priority,
+    lotId,
+  )
+}
+
 const LOT_LIST_SELECT = `SELECT l.*, o.number AS order_number, p.name AS product_name, m.name AS material_name,
-       q.printer_id, pr.name AS printer_name, q.position
+       q.printer_id, pr.name AS printer_name, q.priority, q.position,
+       COALESCE((SELECT SUM(r.reserved_mg) FROM production_material_reservations r WHERE r.production_lot_id = l.id), 0)
+         AS reserved_mg
   FROM production_lots l
   JOIN sales_orders o ON o.id = l.sales_order_id
   JOIN products p ON p.id = l.product_id

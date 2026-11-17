@@ -2,7 +2,14 @@ import type { ProductionLotStatus } from '../../domain/enums.ts'
 import { fail, type Result } from '../../domain/result.ts'
 import { planRelease, type ReleaseLineInput } from '../../domain/rules/release-plan.ts'
 import type { Db } from '../../infrastructure/db/database.ts'
-import { countLots, insertLot, insertReservation, releasedLineIds } from '../../infrastructure/repositories/production-repo.ts'
+import { transitionLot } from '../../domain/rules/lot-state.ts'
+import {
+  countLots,
+  insertLot,
+  insertQueueItem,
+  insertReservation,
+  releasedLineIds,
+} from '../../infrastructure/repositories/production-repo.ts'
 import { getOrder, getOrderLines, updateOrderStatus } from '../../infrastructure/repositories/sales-repo.ts'
 import { addReservedMg, insertMovement, listFreeLots, type FreeLotRow } from '../../infrastructure/repositories/stock-repo.ts'
 import { abort, transact } from '../transaction.ts'
@@ -17,6 +24,9 @@ export interface ReleasedLot {
   qtyPlanned: number
   plannedMg: number
   plannedSeconds: number
+  releasedPiecesPerPlate: number
+  releasedSecondsPerPlate: number
+  releasedMgPerPlate: number
   status: ProductionLotStatus
 }
 
@@ -62,6 +72,10 @@ export function releaseLots(
     }
     const productByLine = new Map(lineRows.map((line) => [line.id, line.product_id]))
 
+    // contracts/producao.md: a liberação passa por Released e já cria a fila inicial sem impressora.
+    const queued = transitionLot('Released', 'enqueue')
+    if (!queued.ok) abort(queued)
+
     const result: ReleasedLot[] = []
     for (const lot of plan.value) {
       const lotId = insertLot(db, {
@@ -71,12 +85,16 @@ export function releaseLots(
         materialId: lot.materialId,
         lotIndex: lot.lotIndex,
         qtyPlanned: lot.pieces,
-        status: 'Released',
+        status: queued.value,
         plannedMg: lot.plannedMg,
         plannedSeconds: lot.plannedSeconds,
+        releasedPiecesPerPlate: lot.releasedPiecesPerPlate,
+        releasedSecondsPerPlate: lot.releasedSecondsPerPlate,
+        releasedMgPerPlate: lot.releasedMgPerPlate,
         createdAt: command.now,
         releasedAt: command.now,
       })
+      insertQueueItem(db, lotId, null, 0, command.now)
       for (const allocation of lot.allocations) {
         insertReservation(db, lotId, allocation.stockItemId, allocation.mg)
         addReservedMg(db, allocation.stockItemId, allocation.mg)
@@ -98,7 +116,10 @@ export function releaseLots(
         qtyPlanned: lot.pieces,
         plannedMg: lot.plannedMg,
         plannedSeconds: lot.plannedSeconds,
-        status: 'Released',
+        releasedPiecesPerPlate: lot.releasedPiecesPerPlate,
+        releasedSecondsPerPlate: lot.releasedSecondsPerPlate,
+        releasedMgPerPlate: lot.releasedMgPerPlate,
+        status: queued.value,
       })
     }
 

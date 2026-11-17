@@ -22,6 +22,10 @@ export interface PlannedReleaseLot {
   pieces: number
   plannedMg: number
   plannedSeconds: number
+  /** Parâmetros da prancha preservados na liberação (research.md item 19). */
+  releasedPiecesPerPlate: number
+  releasedSecondsPerPlate: number
+  releasedMgPerPlate: number
   allocations: Allocation[]
 }
 
@@ -76,6 +80,9 @@ export function planRelease(input: ReleaseInput): Result<PlannedReleaseLot[]> {
         pieces: lot.pieces,
         plannedMg: lot.plannedMg,
         plannedSeconds: lot.plannedSeconds,
+        releasedPiecesPerPlate: line.profile.piecesPerPlate,
+        releasedSecondsPerPlate: line.profile.secondsPerPlate,
+        releasedMgPerPlate: line.profile.mgPerPlate,
         allocations: allocation.value,
       })
       lotIndex++

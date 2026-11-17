@@ -13,7 +13,10 @@ interface QueueLot {
   qtyPlanned: number
   plannedGrams: number
   plannedMinutes: number
+  reservedGrams: number
+  missingMaterialG: number
   status: string
+  printerId: number | null
   printerName: string | null
   position: number | null
 }
@@ -45,6 +48,7 @@ async function load() {
     const [lotsRes, printersRes] = await Promise.all([api.get<QueueLot[]>('/lots'), api.get<Printer[]>('/printers')])
     lots.value = lotsRes.data
     printers.value = printersRes.data
+    for (const lot of lotsRes.data) choice[lot.id] = lot.printerId ?? ''
   } catch (e) {
     loadError.value = problemMessage(e)
   }
@@ -71,7 +75,7 @@ onMounted(load)
       <span class="fictional">Dados de exemplo fictícios</span>
     </div>
     <p class="muted">
-      Lotes liberados aguardam uma impressora. A fila só aceita impressora ativa, disponível e compatível com o material do lote.
+      A liberação já coloca os lotes na fila, sem impressora. Atribua uma impressora: a fila só aceita impressora ativa, disponível e compatível com o material do lote.
     </p>
     <p v-if="loadError" class="error" role="alert">{{ loadError }}</p>
 
@@ -80,7 +84,7 @@ onMounted(load)
         <thead>
           <tr>
             <th>Posição</th><th>Pedido</th><th>Lote</th><th>Modelo</th><th>Peças</th><th>Material</th><th>Tempo</th>
-            <th>Estado</th><th>Impressora</th>
+            <th>Reserva</th><th>Estado</th><th>Impressora</th>
           </tr>
         </thead>
         <tbody>
@@ -92,22 +96,26 @@ onMounted(load)
             <td>{{ lot.qtyPlanned }}</td>
             <td>{{ formatNumber(lot.plannedGrams) }} g de {{ lot.materialName }}</td>
             <td>{{ formatNumber(lot.plannedMinutes) }} min</td>
+            <td>
+              {{ formatNumber(lot.reservedGrams) }} g
+              <span v-if="lot.missingMaterialG > 0" class="error">· faltam {{ formatNumber(lot.missingMaterialG) }} g</span>
+            </td>
             <td>{{ lotStatusLabel[lot.status] ?? lot.status }}</td>
             <td>
-              <template v-if="lot.status === 'Released' && canEnqueue">
+              <template v-if="(lot.status === 'Released' || lot.status === 'Queued') && canEnqueue">
                 <div class="row">
                   <select v-model="choice[lot.id]" :aria-label="`Impressora para o lote ${lot.lotIndex} de ${lot.orderNumber}`">
                     <option value="">Sem impressora definida</option>
                     <option v-for="p in printers" :key="p.id" :value="p.id">{{ printerLabel(p) }}</option>
                   </select>
-                  <button type="button" @click="enqueue(lot)">Enfileirar</button>
+                  <button type="button" @click="enqueue(lot)">{{ lot.status === 'Queued' ? 'Atribuir' : 'Enfileirar' }}</button>
                 </div>
                 <p v-if="rowError[lot.id]" class="error" role="alert">{{ rowError[lot.id] }}</p>
               </template>
               <template v-else>{{ lot.printerName ?? '—' }}</template>
             </td>
           </tr>
-          <tr v-if="lots.length === 0"><td colspan="9" class="muted">Nenhum lote liberado ou na fila.</td></tr>
+          <tr v-if="lots.length === 0"><td colspan="10" class="muted">Nenhum lote liberado ou na fila.</td></tr>
         </tbody>
       </table>
     </section>

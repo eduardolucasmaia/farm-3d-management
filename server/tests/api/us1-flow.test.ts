@@ -37,11 +37,25 @@ describe('US1 pela API (quickstart seção 1)', () => {
       headers: await auth('Production'),
     })
     expect(release.statusCode).toBe(201)
-    const lots = release.json().lots as { id: number; qtyPlanned: number; plannedGrams: number; plannedMinutes: number; status: string }[]
+    const lots = release.json().lots as {
+      id: number
+      qtyPlanned: number
+      plannedGrams: number
+      plannedMinutes: number
+      status: string
+      releasedPiecesPerPlate: number
+      releasedMinutesPerPlate: number
+      releasedGramsPerPlate: number
+    }[]
     expect(lots.map((l) => [l.qtyPlanned, l.plannedGrams, l.plannedMinutes, l.status])).toEqual([
-      [4, 40, 60, 'Released'],
-      [4, 40, 60, 'Released'],
-      [2, 20, 30, 'Released'],
+      [4, 40, 60, 'Queued'],
+      [4, 40, 60, 'Queued'],
+      [2, 20, 30, 'Queued'],
+    ])
+    expect(lots.map((l) => [l.releasedPiecesPerPlate, l.releasedMinutesPerPlate, l.releasedGramsPerPlate])).toEqual([
+      [4, 60, 40],
+      [4, 60, 40],
+      [4, 60, 40],
     ])
 
     const again = await app.inject({
@@ -68,15 +82,41 @@ describe('US1 pela API (quickstart seção 1)', () => {
       headers: await auth('Production'),
       payload: { printerId: s.printerAId, priority: 0 },
     })
-    expect(mesaA.statusCode).toBe(201)
+    // T081: o lote já está na fila desde a liberação; atribuir a impressora atualiza o mesmo item.
+    expect(mesaA.statusCode).toBe(200)
     expect(mesaA.json()).toMatchObject({ status: 'Queued', printerId: s.printerAId, position: 1 })
+
+    const unassign = await app.inject({
+      method: 'POST',
+      url: `/api/lots/${(lots[1] as { id: number }).id}/queue`,
+      headers: await auth('Production'),
+      payload: { printerId: null, priority: 5 },
+    })
+    expect(unassign.statusCode).toBe(200)
 
     const queue = await app.inject({ method: 'GET', url: '/api/lots', headers: await auth('Operator') })
     expect(queue.statusCode).toBe(200)
-    expect(queue.json().map((l: { status: string; printerName: string | null }) => [l.status, l.printerName])).toEqual([
-      ['Queued', 'Mesa A'],
-      ['Released', null],
-      ['Released', null],
+    const items = queue.json() as {
+      status: string
+      printerName: string | null
+      position: number
+      priority: number
+      reservedGrams: number
+      missingMaterialG: number
+      releasedPiecesPerPlate: number
+    }[]
+    // Nunca duplica o item: três lotes, três itens, posições preservadas.
+    expect(items.map((l) => [l.status, l.printerName, l.position])).toEqual([
+      ['Queued', 'Mesa A', 1],
+      ['Queued', null, 2],
+      ['Queued', null, 3],
+    ])
+    expect(items[1]?.priority).toBe(5)
+    // T082: reserva e material faltante calculados.
+    expect(items.map((l) => [l.reservedGrams, l.missingMaterialG, l.releasedPiecesPerPlate])).toEqual([
+      [40, 0, 4],
+      [40, 0, 4],
+      [20, 0, 4],
     ])
 
     const detail = await app.inject({ method: 'GET', url: `/api/sales-orders/${s.orderId}`, headers: await auth('Sales') })
@@ -95,7 +135,7 @@ describe('US1 pela API (quickstart seção 1)', () => {
       headers: await auth('Production'),
     })
     expect(res.statusCode).toBe(409)
-    expect(res.json()).toMatchObject({ code: 'INSUFFICIENT_STOCK', lotIndex: 2, neededGrams: 40, freeGrams: 20 })
+    expect(res.json()).toMatchObject({ code: 'INSUFFICIENT_MATERIAL', lotIndex: 2, neededGrams: 40, freeGrams: 20 })
   })
 
   it('pedido cancelado não muda mais de estado', async () => {

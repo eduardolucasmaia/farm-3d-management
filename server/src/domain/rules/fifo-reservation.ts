@@ -31,7 +31,7 @@ export function allocateFifo(neededMg: number, lots: readonly FreeLot[]): Result
     )
   const freeMg = ordered.reduce((sum, lot) => sum + lot.freeMg, 0)
   if (freeMg < neededMg) {
-    return fail('INSUFFICIENT_STOCK', 'Saldo insuficiente recusa a liberação inteira, sem reserva parcial.', {
+    return fail('INSUFFICIENT_MATERIAL', 'Saldo insuficiente recusa a liberação inteira, sem reserva parcial.', {
       neededMg,
       freeMg,
     })
