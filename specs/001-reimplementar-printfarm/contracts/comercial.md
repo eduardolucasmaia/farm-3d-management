@@ -25,3 +25,15 @@ Estados comerciais seguintes (InProduction, AwaitingFinishing, ReadyToShip, Deli
 - AwaitingFinishing quando todos os lotes estão Completed ou AwaitingPickup e ainda falta encerrar algum
 
 Pedido QuotePending ou Cancelled recusa criação de lote, fatura e pagamento com 409.
+
+## Cancelamento de pedido por PATCH /api/sales-orders/{id}/status
+
+Corpo: `{ "status": "Cancelled" }`. Papéis Sales ou Admin. FR-009.
+
+- Aceitar QuotePending, Approved ou InProduction apenas por planejamento, se não houver execução com StartedAt, fatura nem pagamento. Uma execução iniciada que já terminou ou falhou também impede cancelamento. Execução Planned sem início não impede.
+- 200: pedido Cancelled; lotes de produção pendentes Cancelled; itens de fila e execuções Planned sem início removidos; reservas liberadas uma única vez com Unreserve e trilha das mudanças. A operação é uma transação, sem cancelamento parcial.
+- 409: `code: OrderCancellationBlocked` com blockers entre ExecutionStarted, InvoiceExists e PaymentExists. Pedido já Cancelled continua imutável e não libera reservas novamente.
+- Na recusa, não mudar pedido, lotes, fila, reservas nem lançamentos financeiros.
+- Consultar as condições e aplicar mudanças dentro da transação Serializable. Início de execução, liberação e lançamento de fatura ou pagamento consultam o pedido no mesmo isolamento. Em disputa, não podem confirmar juntos um cancelamento e uma ação que deveria bloqueá-lo. Conflito com rollback confirmado: 409; falha de infraestrutura ou commit incerto: 503 e consulta do estado antes de repetir.
+
+Não há estorno financeiro nem reversão de produção. O orçamento de origem continua OrderGenerated; cancelar o pedido não permite gerar outro pelo mesmo orçamento.

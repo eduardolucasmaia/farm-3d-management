@@ -16,7 +16,7 @@ Todos exigem sessão. Respostas 401 sem sessão, 403 sem papel, 400 com a regra 
 
 ## Regras que a escrita MUST recusar
 
-- Print profile: "Peças por prancha, minutos por prancha e gramas por prancha, todos maiores que zero."
+- Print profile: "Peças por prancha, minutos por prancha e gramas por prancha, todos maiores que zero." Edição válida afeta somente novas liberações; não atualiza campos released* de lotes de produção existentes, seus tempos, gramas, reservas ou reimpressões. FR-011.
 - Printer: "Limite de horas de manutenção maior que zero." O corpo não aceita alterar `hourRateExcludesFilamentAndEnergy`; a resposta traz esse campo sempre `true` e a frase "A taxa de hora-máquina não inclui filamento nem energia."
 - Printer `compatibleMaterialIds`: lista vazia é válida e significa qualquer material.
 - Product: `defaultSellPrice` ≥ 0. `offeredColors` e `offeredSizes` são listas. `isForSale` bool.

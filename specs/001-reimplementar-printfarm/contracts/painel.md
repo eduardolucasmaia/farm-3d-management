@@ -19,6 +19,7 @@ Sessão obrigatória. Leitura do painel: Admin, Production, Sales. Escrita dos p
 - Atrasado: data prometida anterior ao dia local e lote em aberto (não Completed e não Cancelled).
 - Vencendo hoje: data prometida no dia local.
 - printersPrinting: só OperationalStatus Printing. Aguardando retirada não entra.
+- materialConsumedGLast7Days: soma de quantityG dos movimentos ProductionOut e Waste no intervalo dos últimos sete dias, incluindo material gasto em falhas uma única vez por detalhe. Não contar Reserve ou Unreserve. FR-022.
 - examplesAreFictional espelha FarmSettings e MUST ser true nesta feature.
 
 ## GET /api/lots/{id}/cost-estimate
@@ -33,6 +34,8 @@ Sessão obrigatória. Leitura do painel: Admin, Production, Sales. Escrita dos p
   "missingPremises": []
 }
 ```
+
+As gramas e os minutos planejados vêm do lote de produção preservado na liberação, inclusive em reimpressões, sem reler o perfil editável. Tarifa e demais premissas continuam explícitas; essa preservação não cria um histórico de tarifas.
 
 Se faltar tarifa, preço por grama, energia por hora ou taxa, `total` vem `null`, as parcelas conhecidas vêm preenchidas e `missingPremises` lista os nomes que faltam. Não há total substituto.
 
