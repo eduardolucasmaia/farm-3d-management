@@ -19,11 +19,16 @@ Só pedido Approved (ou estado comercial já em produção). Corta cada linha ai
 
 O cenário de prova: 10 peças, 4 por prancha → três lotes, o último com metade das gramas e metade dos minutos da prancha cheia.
 
+## GET /api/lots?status=
+
+Papéis: Production, Operator, Admin. `status` aceita uma lista separada por vírgula de valores de `ProductionLotStatus`; sem `status`, devolve Released e Queued. Itens: `id`, `orderNumber`, `productName`, `materialName`, `lotIndex`, `qtyPlanned`, `plannedGrams`, `plannedMinutes`, `status`, `printerId`, `printerName`, `position`. Ordem: posição na fila, depois id.
+
 ## POST /api/lots/{id}/queue
 
-Corpo: `{ "printerId": number|null, "priority": number }`.
+Corpo: `{ "printerId": number|null, "priority": number }`. Só lote Released; outro estado: 409.
 
 - 201: status Queued.
+- Mais de um lote pode esperar na fila da mesma impressora. "Ocupada" é a impressora fora de Available (Printing, AwaitingPickup, Preparing); "Dois lotes não ocupam a mesma impressora ao mesmo tempo" é garantido ao iniciar a execução.
 - 409: impressora inativa, indisponível, ocupada, em manutenção, ou incompatível. Lista vazia de materiais da impressora aceita qualquer material.
 
 ## POST /api/lots/{id}/runs

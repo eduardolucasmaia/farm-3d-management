@@ -13,6 +13,8 @@ Sessão obrigatória. Escrita de orçamento e pedido: Sales, Admin. Leitura: Sal
 
 ## Pedidos
 
+- `GET /api/sales-orders` lista `{ id, number, customerName, commercialStatus, promisedDate }`. Papéis de leitura.
+- `GET /api/sales-orders/{id}` devolve o pedido com `lines[]` (`id`, `productName`, `quantity`, `materialName`, `colorName`, `size`, `unitPrice`) e `lots[]` (`id`, `lotIndex`, `orderLineId`, `qtyPlanned`, `plannedGrams`, `plannedMinutes`, `status`, `printerName`, `reservations[]` com `materialLotCode` e `grams`). 404 se não existe.
 - `POST /api/sales-orders` cria em QuotePending. Linha grava colorId se o modelo oferece cores e size se oferece tamanhos; senão 400.
 - `POST /api/sales-orders/from-quote/{quoteId}` exige `{ "promisedDate": string }`. Orçamento precisa estar Approved e não vencido. Nasce Approved. Orçamento vai a OrderGenerated. Segunda chamada: 409 e um único pedido.
 - `PATCH /api/sales-orders/{id}/status` de QuotePending só para Approved ou Cancelled. Cancelled posterior: 409. Não existe volta para QuotePending.
