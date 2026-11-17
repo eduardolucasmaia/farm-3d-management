@@ -7,7 +7,7 @@ description: "Tarefas do núcleo Farm 3D alinhadas à clarificação e ao plano 
 **Input**: `specs/001-reimplementar-printfarm/`
 **Prerequisites**: [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md), [data-model.md](data-model.md), contratos e [quickstart.md](quickstart.md).
 **Branch**: `001-reimplementar-printfarm`
-**Tests**: A constituição III e o plano exigem teste automatizado vermelho antes de regra nova ou alterada. Arquivos em src/Farm3d.Tests/Domain usam o trait Category=Domain; arquivos em Stock e Contracts usam Category=StockIntegration com SQL Server exclusivo. Vitest cobre o guarda da SPA. Testes HTTP são focados nos contratos e ações de risco, sem suíte exaustiva por endpoint.
+**Tests**: O princípio II da constituição e o plano exigem teste automatizado vermelho antes de regra nova ou alterada. Arquivos em src/Farm3d.Tests/Domain usam o trait Category=Domain; arquivos em Stock e Contracts usam Category=StockIntegration com SQL Server exclusivo. Vitest cobre o guarda da SPA. Testes HTTP são focados nos contratos e ações de risco, sem suíte exaustiva por endpoint.
 **Organization**: Setup, fundação, oito histórias por prioridade e validação. Cada história admite prova com seus dados semeados; dependências de modelos e infraestrutura são explícitas abaixo. Nenhuma tarefa foi executada nesta geração.
 
 ## Formato e execução
@@ -61,7 +61,7 @@ Domínio em `src/Farm3d.Domain/`, casos de uso e limites em `src/Farm3d.Applicat
 - [ ] T022 Após escolha explícita de T021, implementar `web/src/pages/EntrarPage.vue` e `web/src/App.vue` com a alternativa aprovada, usando login e erros do contrato. FR-001. Depende de T021.
 - [ ] T023 Criar `src/Farm3d.Domain/Entities/AuditLog.cs`, `src/Farm3d.Application/UseCases/AuditWriter.cs` e mapeamento em `src/Farm3d.Infrastructure/Persistence/Configurations/AuditLogConfiguration.cs`; a captura participa da transação de cada história desde US1, sem esperar US8. Migration `src/Farm3d.Infrastructure/Persistence/Migrations/AuditCapture.cs`. FR-024. Restrições literais de data-model.md: AuditLog: "EntityName; EntityId; Action; UserId; At; FromStatus; ToStatus. "Trilha guarda entidade, ação, usuário, momento, estado anterior e estado novo." Leitura: Admin e Production." Depende de T013.
 - [ ] T024 Criar o agendador vazio de intervalo horário em `src/Farm3d.Infrastructure/Jobs/HourlyFarmJob.cs`, sem banco ou painel de jobs adicional, e registrá-lo em `src/Farm3d.Api/Program.cs`; cada efeito de negócio será acrescentado na história correspondente. Depende de T019.
-- [ ] T025 Verificar dependências em `src/Farm3d.Domain/Farm3d.Domain.csproj`, executar os testes de autenticação e guarda e registrar comandos/resultados em `specs/001-reimplementar-printfarm/pr.md`. Domain deve compilar sem dependência de EF, HTTP, UI ou container; conferir que o teste SQL realmente executou. Depende de T022, T023, T024.
+- [ ] T025 Criar `src/Farm3d.Tests/Domain/DomainPurityTests.cs` com Category=Domain para conferir dependências do assembly de domínio e recusar EF, HTTP, UI e container, conforme o gate do princípio I. Verificar também `src/Farm3d.Domain/Farm3d.Domain.csproj`, executar os testes de pureza, autenticação e guarda e registrar comandos/resultados em `specs/001-reimplementar-printfarm/pr.md`. Domain deve compilar sem dependência de EF, HTTP, UI ou container; conferir que o teste SQL realmente executou. Depende de T022, T023, T024.
 
 **Checkpoint**: Concluir T025 e os pré-requisitos desta fase antes do próximo incremento.
 

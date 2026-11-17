@@ -40,20 +40,26 @@ A revisão de 2026-11-17 incorpora as cinco respostas de `spec.md#clarifications
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+Conferido contra a constituição 2.0.0 após integrar sua emenda de 2026-11-17. A tabela preserva os gates da emenda e aponta as tarefas atuais. Evidência de desenho não significa teste executado. A numeração anterior de tarefas está mapeada em tasks.md.
 
-| Princípio | Antes da pesquisa | Depois do desenho |
-|-----------|-------------------|-------------------|
-| I. A constituição manda | Passa. Stack não está na constituição; entra neste plan. | Passa. research.md registra a escolha e o que foi descartado. |
-| II. Domínio puro, casca fina | Passa. O plan separa Domain de Api, Infrastructure e web. | Passa. data-model.md e os contratos não colocam regra em controller. |
-| III. Teste antes da regra | Exige teste vermelho antes de cada regra nova. | Desenho inclui provas unitárias e SQL Server em quickstart.md. A ordem e a cobertura de tasks.md precisam ser atualizadas por `$speckit-tasks` antes da implementação. |
-| IV. Dois estados | Passa. A spec separa lote e impressora. | Passa no desenho. Falha com reimpressão devolve o lote à fila, mas deixa a impressora aguardando retirada. A retirada usa a execução que ocupava a mesa e não altera a reimpressão. |
-| V. Rastreio sem baixa duplicada | Exige reserva integral, consumo único e trilha em cada mudança. | Passa no desenho. Consumo, complemento, cancelamento e trilha compartilham transações; repetição terminal não grava baixa. Registro mínimo de auditoria acompanha a escrita desde US1, sem esperar a tela de US8. |
-| VI. Estimativa explícita | Passa. FR-023. | Passa. CostEstimate sem total se falta premissa. Frase da taxa no resultado. |
-| VII. Escopo parado | Passa. FR-026. | Passa. research.md item 14 não cria assistente, fiscal nem telemetria. |
-| VIII. Dado fictício marcado | Passa. FR-025. | Passa. FarmSettings.ExamplesAreFictional permanece verdadeiro. |
+| Princípio | Gate | Antes da pesquisa | Depois do desenho, evidência planejada |
+|-----------|------|-------------------|----------------------------------------|
+| I. Domínio puro, casca fina | Núcleo sem persistência, HTTP e UI | Separação Domain/Application/Infrastructure/Api no contexto técnico. | T002 restringe dependências; T025 prevê DomainPurityTests.cs e sua execução. A prova verde ainda depende da implementação. |
+| I | Decisão de negócio no núcleo | research.md item 2. | T036, T058, T071, T085, T098 e T107 implementam regras puras; T038, T061, T062, T073 e T087 a T090 orquestram a transação. |
+| II. Teste antes da regra | Teste precede cada regra | research.md item 13. | T026 a T032 antes de T033 a T039; T053 a T057 antes de T058 a T063; T067 a T070 antes de T071 a T074; T078 a T084 antes de T085 a T092; T095 a T097 antes de T098 a T100; T103 a T106 antes de T107 a T110. |
+| II | Orquestração com teste próprio | research.md itens 3 e 15 distinguem SQL Server de InMemory. | T030, T056, T069, T082, T083 e T096 escrevem testes SQL antes dos casos de uso. Falha do complemento não desfaz falha/consumo válidos. |
+| II | Roteiro independente por história | quickstart.md seções 1 a 8. | Cada fase de tasks.md cita seu roteiro. Há achado C1 aberto em analysis.md: US1-AS9 foi adiado para US5. Resolver antes de implementar; não declarar esse gate aprovado. |
+| III. Dois estados | Nenhum estado derivado do outro | FR-014 e FR-015. | Duas tabelas em data-model.md; T078, T079, T085 e T090; OccupyingPrintRunId preserva a execução física até a retirada sem alterar a reimpressão. |
+| IV. Rastreio sem baixa duplicada | Saldo atômico e não repetível | FR-012, FR-017 e FR-018. | T030, T082 e T083 provam rollback e repetição; T080 e T081 cobrem consumo e complemento; T013 define Serializable e tradução de falhas. |
+| IV | Trilha em toda mudança de estado | FR-024. | T023 disponibiliza captura desde a fundação; T030, T056, T069 e T082 verificam transações com trilha; T113 a T116 acrescentam conferência e consulta restrita. |
+| V. Estimativa explícita, dado fictício marcado | Sem total sem premissa ou número inventado | FR-023 e FR-005. | T029 cobre limite obrigatório; T103, T106 e T107 cobrem total ausente e missingPremises. U1 de analysis.md ainda exige definir a saída verificável da previsão. |
+| V | Exemplo marcado | FR-025. | T009 e T010 mantêm ExamplesAreFictional; T040 semeia dados fictícios; T112 executa a prova de identificação da marca. |
+| VI. Escopo parado | Nada da lista Fora criado | FR-026 e research.md item 14. | T040 restringe a semente a Development; T097, T098 e T117 preservam os limites de financeiro, código novo e referência. |
+| VI | Sem estrutura sem requisito | Complexity Tracking abaixo. | T059 e T060 introduzem os fatos persistidos que CancelOrder consulta na US3; os endpoints de execução/financeiro só entram nas US5/US6. |
+| VII. Acesso por papel, segredo fora do repositório | Recusa no servidor por papel | FR-001 e FR-002; matrizes em contracts/. | T016, T031, T044, T045, T057, T070, T084, T097, T106 e T114 preveem provas HTTP de acesso; 403 deixa de depender apenas do roteiro manual. |
+| VII | Nenhum segredo versionado | Constraints do contexto técnico. | T005 e T007 documentam somente nomes de variáveis; T011 guarda hash; T018 usa senha de semente por variável somente em Development. |
 
-Nenhuma violação constitucional identificada no desenho revisado. Isso não comprova implementação. A regeneração das tarefas e as provas abaixo são condições para implementar esta revisão.
+A implementação permanece bloqueada pelo achado CRITICAL C1 registrado na análise anterior. O merge não aplica as correções dos sete achados; o Constitution Check e a análise precisam ser reconferidos antes de implementar. As referências acima preservam a captura antecipada de auditoria, o SQL Server isolado e as cinco clarificações locais.
 
 ## Regras e operações atômicas
 
@@ -162,4 +168,4 @@ docker-compose.yml
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| Cinco projetos .NET mais a SPA | O princípio II separa regra, caso de uso, persistência, HTTP e tela | Um projeto único colocaria EF e HTTP no mesmo assembly da regra, e o teste deixaria de ser puro |
+| Cinco projetos .NET mais a SPA | O princípio I separa regra, caso de uso, persistência, HTTP e tela | Um projeto único colocaria EF e HTTP no mesmo assembly da regra, e o teste deixaria de ser puro |

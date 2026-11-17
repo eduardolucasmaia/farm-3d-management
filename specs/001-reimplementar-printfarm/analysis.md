@@ -4,6 +4,7 @@
 **Feature**: `001-reimplementar-printfarm`
 **Escopo**: análise de [spec.md](spec.md), [plan.md](plan.md) e [tasks.md](tasks.md), com apoio da [constituição](../../.specify/memory/constitution.md), do [modelo de dados](data-model.md) e dos contratos.
 **Estado**: achados abertos. A análise original foi somente em leitura; este arquivo registra o relatório, sem aplicar as correções propostas.
+**Referência histórica**: este relatório descreve o estado do commit `454feb2`, com a constituição 1.0.0. A integração posterior da constituição 2.0.0 exige nova análise; as localizações numéricas abaixo são as do estado analisado. Os sete achados não foram reavaliados ou encerrados pelo merge.
 
 Foram identificados 7 pontos: 1 CRITICAL, 2 HIGH e 4 MEDIUM. Recomenda-se resolver os três primeiros antes de `$speckit-implement`.
 
