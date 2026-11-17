@@ -1,7 +1,7 @@
 # Data Model: Reimplementar o núcleo da farm
 
 **Feature**: `specs/001-reimplementar-printfarm`
-**Date**: 2026-11-16 | **Revisado**: 2026-11-17 (unidades inteiras para a stack Node.js + SQLite)
+**Date**: 2026-11-16 | **Revisado**: 2026-11-17 (unidades inteiras para a stack Node.js + SQLite; regras das clarificações de 2026-11-17 integradas)
 
 Nomes de código em inglês, rótulos de tela em português, conforme o vocabulário da constituição. "Lote" sozinho não aparece em rótulo.
 
@@ -77,14 +77,14 @@ Uma linha só.
 - **Material**: Name obrigatório; Kind obrigatório; ReferenceCostCentsPerKg ≥ 0; ReorderPointMg nulo ou ≥ 0; DiameterUm nulo ou > 0; ColorId opcional.
 - **MaterialLot**: MaterialId e SupplierId obrigatórios; LotCode obrigatório e único por material; ReceivedAt obrigatório; InitialWeightMg > 0; CurrentWeightMg ≥ 0 e ≤ InitialWeightMg; CostCentsPerKg ≥ 0.
 - **StockItem**: MaterialId obrigatório; MaterialLotId opcional (nulo = agregado do material, não usado na reserva); QuantityMg ≥ 0; ReservedMg ≥ 0; ReservedMg ≤ QuantityMg. Livre = QuantityMg − ReservedMg.
-- **StockMovement**: Kind obrigatório; QuantityMg > 0; UnitCostCentsPerKg ≥ 0; CreatedAt; UserId; origem opcional em ProductionLotId, PrintRunId ou PurchaseReceiptId. "Movimentação guarda tipo, gramas, custo unitário e origem."
+- **StockMovement**: Kind obrigatório; QuantityMg > 0; UnitCostCentsPerKg ≥ 0; CreatedAt; UserId; StockItemId e MaterialLotId identificam o saldo e o custo afetados; origem em ProductionLotId, PrintRunId ou PurchaseReceiptId conforme a ação. Consumo terminal exige PrintRunId e ProductionLotId. Consumo de vários lotes de material gera um detalhe por origem; parcelas de reserva própria e de saldo livre do mesmo StockItem são somadas no mesmo detalhe. Os detalhes de um PrintRunId formam uma única baixa lógica, cuja soma é ActualMaterialMg. ProductionOut identifica conclusão e Waste identifica falha; zero na falha não gera saída. Índice único em PrintRunId + StockItemId para movimentos ProductionOut ou Waste impede duas linhas terminais da mesma origem na mesma execução. "Movimentação guarda tipo, gramas, custo unitário e origem."
 
 ## Catálogo de produção
 
 - **File3D**: Name obrigatório. **File3DVersion**: VersionLabel obrigatório; StoragePath obrigatório e relativo a `FARM3D_FILES_DIR`; CreatedAt.
 - **PrintProfile**: Name obrigatório; PiecesPerPlate ≥ 1 inteiro; SecondsPerPlate > 0; MgPerPlate > 0; MaterialId opcional. "Peças por prancha, minutos por prancha e gramas por prancha, todos maiores que zero."
 - **Product** (modelo): Name e Sku obrigatórios, Sku único; DefaultSellPriceCents ≥ 0; DefaultPrintProfileId obrigatório para liberar; IsForSale bool; listas de ColorId e tamanhos (texto curto) oferecidos. Preço de venda não é custo.
-- **Printer**: Name obrigatório; CostCentsPerHour ≥ 0; EnergyWhPerHour nulo ou ≥ 0; MaintenanceLimitHours > 0 inteiro; AccumulatedSeconds ≥ 0; PreparationSeconds ≥ 0; IsActive; OperationalStatus; HourRateExcludesFilamentAndEnergy MUST ser verdadeiro e não editável. "Limite de horas de manutenção maior que zero." "A taxa de hora-máquina não inclui filamento nem energia."
+- **Printer**: OccupyingPrintRunId opcional identifica a execução na mesa desde o início até a retirada, inclusive depois de falhar ou concluir; criar reimpressão não troca esse vínculo. Name obrigatório; CostCentsPerHour ≥ 0; EnergyWhPerHour nulo ou ≥ 0; MaintenanceLimitHours > 0 inteiro; AccumulatedSeconds ≥ 0; PreparationSeconds ≥ 0; IsActive; OperationalStatus; HourRateExcludesFilamentAndEnergy MUST ser verdadeiro e não editável. "Limite de horas de manutenção maior que zero." "A taxa de hora-máquina não inclui filamento nem energia."
 - **PrinterMaterial**: par PrinterId + MaterialId. Lista vazia significa compatível com qualquer material.
 - **Operator**: Name obrigatório; UserId opcional.
 
@@ -92,31 +92,32 @@ Uma linha só.
 
 - **Quote**: Number único; CustomerId; Status; ValidUntil data opcional; Notes; CreatedAt; TotalCents = soma das linhas. Transições: Draft → Sent; Draft ou Sent → Approved; Draft, Sent ou Approved → Rejected; Draft, Sent ou Approved → Expired só pelo processamento periódico quando ValidUntil já passou no dia local da farm; Approved → OrderGenerated só na geração do pedido. Rejected, Expired e OrderGenerated não geram pedido. "Rejeitado e pedido gerado não são expirados."
 - **QuoteLine**: ProductId; Quantity > 0 inteiro; UnitPriceCents ≥ 0; MaterialId opcional. SubtotalCents = Quantity × UnitPriceCents, exato.
-- **SalesOrder**: Number único; CustomerId; QuoteId opcional; CommercialStatus; PromisedDate data opcional no pedido manual e obrigatória na geração por orçamento; FreightCents ≥ 0; PackagingCents ≥ 0; Notes. Pedido manual nasce QuotePending. De QuotePending só para Approved ou Cancelled. Cancelled não muda. Demais transições: contracts/comercial.md. "Pedido em confirmação pendente não gera lote de produção, fatura nem pagamento."
+- **SalesOrder**: Number único; CustomerId; QuoteId opcional; CommercialStatus; PromisedDate data opcional no pedido manual e obrigatória na geração por orçamento; FreightCents ≥ 0; PackagingCents ≥ 0; Notes. Pedido manual nasce QuotePending. De QuotePending só para Approved ou Cancelled. Cancelled não muda. Cancelamento também é permitido em Approved ou InProduction se só houve planejamento: sem qualquer PrintRun com StartedAt (inclusive já encerrada), Invoice ou Payment. Cancela os ProductionLot pendentes, remove fila e PrintRun Planned sem início, libera reservas com Unreserve e grava trilha numa só transação; qualquer impedimento recusa sem alterar dados. Demais transições: contracts/comercial.md. "Pedido em confirmação pendente não gera lote de produção, fatura nem pagamento."
 - **OrderLine**: ProductId; Quantity > 0; UnitPriceCents ≥ 0; MaterialId obrigatório na liberação; ColorId obrigatório se o modelo oferece cores; Size obrigatório se o modelo oferece tamanhos. A escolha fica gravada.
 
 ## Produção
 
-- **ProductionLot**: SalesOrderId; OrderLineId; ProductId; MaterialId; QtyPlanned > 0; QtyCompleted ≥ 0 e ≤ QtyPlanned; Status; PlannedMg > 0; PlannedSeconds > 0; CreatedAt; ReleasedAt opcional; CompletedAt opcional.
+- **ProductionLot**: SalesOrderId; OrderLineId; ProductId; MaterialId; LotIndex ≥ 1, único no pedido; QtyPlanned > 0; QtyCompleted ≥ 0 e ≤ QtyPlanned; Status; PlannedMg > 0; PlannedSeconds > 0; ReleasedPiecesPerPlate ≥ 1; ReleasedSecondsPerPlate > 0; ReleasedMgPerPlate > 0; CreatedAt; ReleasedAt opcional; CompletedAt opcional.
+- **Parâmetros preservados**: ReleasedPiecesPerPlate, ReleasedSecondsPerPlate e ReleasedMgPerPlate são copiados do perfil na liberação e não mudam depois dela. PlannedMg e PlannedSeconds são calculados a partir deles uma vez. Editar PrintProfile só afeta liberações futuras. Reimpressões usam o mesmo ProductionLot e não releem o perfil.
 - **Corte**: quantidade de lotes = teto(peças da linha / peças por prancha). Lote cheio: PlannedMg = MgPerPlate e PlannedSeconds = SecondsPerPlate. Lote incompleto: ambos × (peças do lote / peças por prancha), arredondados para cima ao inteiro. "10 peças com 4 por prancha produzem 3 lotes, o último com metade do tempo e metade do material."
-- **ProductionMaterialReservation**: ProductionLotId; StockItemId; ReservedMg > 0. Uma liberação bem-sucedida cobre PlannedMg. "Saldo insuficiente recusa a liberação inteira, sem reserva parcial." "Repetir a liberação já reservada é recusado."
-- **PrintQueueItem**: ProductionLotId único na fila ativa; PrinterId opcional; Priority inteiro; Position inteiro ≥ 1.
-- **PrintRun**: ProductionLotId; PrinterId; OperatorId opcional; Status; StartedAt; EndedAt; PausedSeconds ≥ 0; FailureReason; FailureNotes; ActualMaterialMg nulo até a conclusão, e na conclusão > 0; ActualSeconds; MaterialLotId opcional; ReprintOfPrintRunId opcional.
+- **ProductionMaterialReservation**: ProductionLotId; StockItemId; ReservedMg > 0 nas reservas ativas; par ProductionLotId + StockItemId único. Consumo reduz ou encerra a reserva, sem apagar suas movimentações. Uma liberação bem-sucedida cobre PlannedMg. Após falha, a reserva restante pode ser menor enquanto aguarda complemento; isso não autoriza iniciar. Complemento integral = max(0, PlannedMg − soma das reservas restantes). "Saldo insuficiente recusa a liberação inteira, sem reserva parcial." "Repetir a liberação já reservada é recusado."
+- **PrintQueueItem**: ProductionLotId único na fila ativa; PrinterId opcional; Priority inteiro; Position inteiro ≥ 1. A liberação cria o item sem impressora; a atribuição posterior valida compatibilidade e ocupação e atualiza o mesmo item. A consulta inclui ReservedMg e MissingMg = max(0, PlannedMg − ReservedMg); MissingMg positivo bloqueia o início até completar a reserva.
+- **PrintRun**: ProductionLotId; PrinterId opcional em Planned e obrigatório desde Running; OperatorId opcional; Status; StartedAt opcional até Running; EndedAt; PausedSeconds ≥ 0; FailureReason; FailureNotes; ActualMaterialMg nulo antes do encerramento, > 0 em Completed e ≥ 0 em Failed; ActualSeconds; ReprintOfPrintRunId opcional e único quando preenchido. O consumo se rastreia pelos StockMovement ligados à execução. Só uma execução Planned, Running ou Paused por lote de produção. Iniciar uma reimpressão ativa a Planned existente; a Failed anterior continua terminal.
 
 ### Transições do lote de produção
 
 | De | Evento | Para |
 |----|--------|------|
 | AwaitingPlanning | liberar com reserva integral | Released |
-| Released | enfileirar | Queued |
-| Queued | iniciar execução | Printing |
+| Released | enfileirar (a liberação já enfileira sem impressora, na mesma transação) | Queued |
+| Queued | iniciar execução com reserva completa e impressora disponível | Printing |
 | Printing | pausar | Paused |
 | Paused | retomar | Printing |
 | Printing | concluir impressão | AwaitingPickup |
 | AwaitingPickup | confirmar retirada após execução concluída | Completed |
 | Printing ou Paused | falhar sem reimpressão | Failed |
 | Printing ou Paused | falhar com reimpressão | Queued |
-| AwaitingPlanning ou Released ou Queued | cancelar | Cancelled |
+| AwaitingPlanning ou Released ou Queued | cancelar lote ou cancelar pedido elegível | Cancelled |
 
 Completed, Failed e Cancelled não mudam, salvo o retorno Queued no caso de reimpressão a partir de Printing ou Paused (o lote que falhou com reimpressão não permanece em Failed).
 
@@ -128,18 +129,30 @@ Um pedido está produzido somente quando todos os seus lotes estão Completed.
 |----|--------|------|
 | Available | iniciar execução | Printing |
 | Printing | concluir impressão ou falhar execução | AwaitingPickup |
-| AwaitingPickup | confirmar retirada | Preparing |
+| AwaitingPickup | confirmar retirada e limpar OccupyingPrintRunId | Preparing |
 | Preparing | concluir preparação e horas acumuladas < limite e não bloqueada | Available |
 | Preparing | concluir preparação e horas acumuladas ≥ limite | InMaintenance |
 | InMaintenance | confirmar manutenção com nota | Available, se não estiver marcada indisponível |
 | qualquer exceto InMaintenance | admin marca indisponível | Unavailable |
 | Unavailable | admin reativa, sem manutenção vencida e sem execução aberta | Available |
 
-Pausa do lote não muda o estado da impressora: ela permanece Em impressão. Confirmar a retirada depois de uma execução concluída marca o lote como Concluído. Confirmar a retirada depois de uma falha não muda o lote, que já está em Falha.
+Pausa do lote não muda o estado da impressora: ela permanece Em impressão. A retirada consulta OccupyingPrintRunId antes de limpá-lo. Se a execução ocupante concluiu, marca o lote como Concluído. Se falhou, não altera o estado atual do lote nem o de uma reimpressão, inclusive se ela já começou em outra impressora. Sem reimpressão, o lote permanece em Falha.
 
 "Concluir a impressão deixa o lote aguardando retirada e a impressora aguardando retirada." "A impressora só volta a disponível depois da retirada e da preparação, e somente se as horas acumuladas estiverem abaixo do limite."
 
-Horas acumuladas aumentam pelo tempo real de impressão na conclusão, não pela pausa. Comparação com o limite: AccumulatedSeconds ≥ MaintenanceLimitHours × 3600.
+Horas acumuladas aumentam pelo tempo real de impressão na conclusão, não pela pausa. [NEEDS CLARIFICATION: execução que falha também soma o tempo real às horas acumuladas? Achado A2 de analysis.md.]
+
+### Consumo e reimpressão
+
+1. Validar execução Running ou Paused e material real obrigatório. Omissão ou negativo recusa sem efeitos; a conclusão também recusa zero.
+2. Planejar o consumo das reservas do próprio ProductionLot por ReceivedAt e Id do lote de material. Só o excesso usa QuantityMg − ReservedMg de lotes do mesmo material, na mesma ordem. Se faltar para o consumo, recusar a operação inteira, inclusive os dois estados e a trilha.
+3. Consumo da reserva reduz QuantityMg, CurrentWeightMg, ReservedMg e a reserva própria na mesma quantidade. Consumo do saldo livre reduz só QuantityMg e CurrentWeightMg. Reservas alheias ficam intactas. Movimentos e estado terminal são gravados na mesma transação; a soma da baixa lógica da execução é o material real positivo.
+4. Em Completed, liberar a reserva que sobrar. Em Failed sem reimpressão, liberar a reserva restante. Em Failed com reimpressão, manter a reserva restante, criar uma PrintRun Planned ligada à anterior e devolver o ProductionLot à fila; a Printer segue AwaitingPickup vinculada à execução que falhou.
+5. Tentar completar a reserva até PlannedMg, com FIFO e sem complemento parcial. Se faltar só o complemento, confirmar a falha e seu consumo sem desfazer o resto; MissingMg indica o bloqueio.
+6. Ao tentar iniciar depois de entrada de material, tentar de novo o complemento integral dentro da transação. Só iniciar com reserva completa e impressora disponível. Falta de saldo recusa o início, preservando o planejamento e as reservas existentes.
+7. Repetir encerramento terminal recusa sem movimentos nem reimpressão extra. Falha de infraestrutura em qualquer etapa desfaz a transação inteira; falta de complemento é resultado de negócio, não exceção.
+
+As decisões são regras puras; atomicidade e isolamento vêm de `withTransaction` (research.md item 3): uma transação de escrita exclusiva por vez. Comparação com o limite: AccumulatedSeconds ≥ MaintenanceLimitHours × 3600.
 
 ## Compras e financeiro
 
@@ -153,6 +166,7 @@ Horas acumuladas aumentam pelo tempo real de impressão na conclusão, não pela
 
 - **DeadlineAlert**: RunAt; OverdueCount; DueTodayCount. Atrasado = PromisedDate < hoje e existe lote não Completed e não Cancelled. Vencendo hoje = PromisedDate igual a hoje. "Hoje" é a data no fuso de FarmSettings.TimeZone.
 - **RestockSuggestion**: RunAt; MaterialId; AvailableMg; SuggestedOrderMg. Só quando ReorderPointMg não é nulo e o livre do material está abaixo dele. SuggestedOrderMg = ReorderPointMg − livre, mínimo zero.
+- **Consumo de sete dias**: soma de QuantityMg de ProductionOut e Waste no intervalo, uma vez por detalhe, sem contar Reserve e Unreserve.
 - **AuditLog**: EntityName; EntityId; Action; UserId; At; FromStatus; ToStatus. "Trilha guarda entidade, ação, usuário, momento, estado anterior e estado novo." Leitura: Admin e Production.
 
 ## Custo estimado (valor calculado, não tabela)
