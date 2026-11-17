@@ -1,15 +1,16 @@
 /**
  * Resultado de uma regra de domínio. Recusa de negócio é valor, não exceção
  * (research.md item 15). Exceção fica para erro de programação.
+ * `details` carrega dados que o contrato devolve junto da recusa.
  */
-export type Result<T> = { ok: true; value: T } | { ok: false; code: string; message: string }
+export type Failure = { ok: false; code: string; message: string; details?: Record<string, number | string> }
 
-export type Failure = { ok: false; code: string; message: string }
+export type Result<T> = { ok: true; value: T } | Failure
 
 export function ok<T>(value: T): { ok: true; value: T } {
   return { ok: true, value }
 }
 
-export function fail(code: string, message: string): Failure {
-  return { ok: false, code, message }
+export function fail(code: string, message: string, details?: Record<string, number | string>): Failure {
+  return details ? { ok: false, code, message, details } : { ok: false, code, message }
 }

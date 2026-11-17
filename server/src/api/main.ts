@@ -2,6 +2,7 @@ import { loadConfig } from '../infrastructure/config.ts'
 import { openDatabase } from '../infrastructure/db/database.ts'
 import { applyMigrations } from '../infrastructure/db/migrate.ts'
 import { HOURLY_INTERVAL_MS, runHourlyPass } from '../infrastructure/jobs/hourly-farm-job.ts'
+import { seedDemo } from '../infrastructure/seed/demo-seed.ts'
 import { seedIdentity } from '../infrastructure/seed/identity-seed.ts'
 import { buildApp } from './app.ts'
 
@@ -13,6 +14,9 @@ applyMigrations(db)
 if (config.isDevelopment && config.seedPassword) {
   const created = seedIdentity(db, config.seedPassword, now())
   if (created > 0) console.log(`Semente de identidade: ${created} usuário(s) criado(s).`)
+}
+if (config.isDevelopment && seedDemo(db, now())) {
+  console.log('Semente de demonstração (dados fictícios) criada.')
 }
 
 const app = await buildApp({ db, config, now }, { logger: true })

@@ -12,6 +12,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/fila' },
   { path: '/entrar', name: 'entrar', component: () => import('../pages/EntrarPage.vue') },
   { path: '/fila', name: 'fila', component: () => import('../pages/FilaPage.vue'), meta: { requiresAuth: true } },
+  { path: '/pedidos', name: 'pedidos', component: () => import('../pages/PedidoPage.vue'), meta: { requiresAuth: true } },
 ]
 
 export function createAppRouter(mode: 'web' | 'memory' = 'web'): Router {
