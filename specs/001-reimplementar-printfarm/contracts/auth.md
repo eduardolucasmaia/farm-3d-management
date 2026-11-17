@@ -5,7 +5,7 @@ Base: `/api`. JSON. Sessão: cabeçalho `Authorization: Bearer <token>`, exceto 
 Convenções que valem para todos os contratos desta pasta:
 
 - Sem sessão válida: 401. Sessão com papel fora da lista da rota: 403. A recusa acontece no servidor.
-- Erro: `application/problem+json` com `type`, `title`, `status`, `detail` e `code` (research.md item 15). `detail` traz o texto estável da regra violada.
+- Erro: `application/problem+json` com `type`, `title`, `status`, `detail` e `code` (research.md item 15). `detail` traz o texto estável da regra violada. `code` e valores de lista como `blockers` são MAIÚSCULAS_COM_SUBLINHADO (por exemplo `INSUFFICIENT_MATERIAL`). Campos de contexto (como `lotIndex`, `neededGrams`) vêm no mesmo objeto.
 - Número decimal no JSON segue as casas da tabela "Unidades e representação" de data-model.md. Mais casas que o permitido: 400.
 - Instante no JSON: ISO-8601 em UTC. Data sem hora: `AAAA-MM-DD`.
 

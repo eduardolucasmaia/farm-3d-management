@@ -8,7 +8,7 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/, quickstart.md
 
-**Revisado**: 2026-11-17, para a stack Node.js + TypeScript + SQLite (research.md item 1). Os IDs T001–T075 mantêm o propósito da versão .NET; caminhos e comandos mudaram. A antiga T072.5 virou T076. T077, T078 e T079 são novas.
+**Revisado**: 2026-11-17, para a stack Node.js + TypeScript + SQLite (research.md item 1). Os IDs T001–T075 mantêm o propósito da versão .NET; caminhos e comandos mudaram. A antiga T072.5 virou T076. T077, T078 e T079 são novas. T080–T088 vêm da integração das clarificações de 2026-11-17 (spec.md, "Clarifications"; research.md itens 17 a 20). A lista de 119 tarefas em C# publicada na mesma data foi substituída por esta; o que nela era regra de negócio está aqui.
 
 **Tests**: Entram nas regras de domínio, na orquestração e no acesso por papel. O princípio II da constituição exige o teste vermelho antes da regra. Jornada de tela fica em `specs/001-reimplementar-printfarm/quickstart.md`. Na SPA, Vitest cobre só o guarda de rota.
 
@@ -105,6 +105,13 @@ Valem para toda tarefa abaixo, além das "Regras para agentes" da constituição
 - [X] T030 [US1] Criar `server/src/infrastructure/seed/demo-seed.ts` com o modelo "Suporte demo (fictício)", 4 peças, 60 min e 40 g por prancha, um fornecedor, dois lotes de material do mesmo insumo, as impressoras "Mesa A" e "Mesa B" e um pedido de 10 peças em QuotePending, conforme a seção 1 de `quickstart.md`. Só com `NODE_ENV=development`
 - [X] T031 [US1] Criar `web/src/pages/PedidoPage.vue` e `web/src/pages/FilaPage.vue` para confirmar o pedido semeado, liberar e mostrar os 3 lotes com a marca de dado fictício
 
+### Ajustes da US1 pelas clarificações de 2026-11-17
+
+- [ ] T080 [US1] Escrever primeiro, em `server/tests/application/release-lots.test.ts` e `server/tests/domain/lot-split.test.ts`, os casos novos e vê-los falhar: cada lote liberado grava `ReleasedPiecesPerPlate`, `ReleasedSecondsPerPlate` e `ReleasedMgPerPlate` copiados do perfil; a liberação termina com os lotes em Queued e um item de fila sem impressora por lote, na mesma transação; a recusa de saldo usa o código `INSUFFICIENT_MATERIAL`. Depois acrescentar as três colunas a `server/migrations/0002-production-lots.sql` (ainda não mesclada na base; depois de mesclada, usar migração nova), e ajustar `release-plan.ts`, `release-lots.ts`, `production-repo.ts` e `routes/lots.ts`. Regra: "Alterações do perfil valem só para novas liberações."
+- [ ] T081 [US1] Escrever primeiro em `server/tests/api/us1-flow.test.ts` que `POST /api/lots/{id}/queue` responde 200 ao atribuir ou trocar a impressora de um lote já Queued, atualizando o mesmo item de fila, e 201 para lote Released sem item; nunca duplica o item. Depois ajustar `enqueue-lot.ts`, `production-repo.ts` e a rota, com as mesmas validações de `checkPrinterCompatibility`
+- [ ] T082 [US1] Escrever primeiro em `server/tests/api/us1-flow.test.ts` que `GET /api/lots` devolve `reservedGrams`, `missingMaterialG` = max(0, plannedGrams − reservedGrams) e os três campos `released*`. Depois ajustar `production-repo.ts` e `routes/lots.ts`, e mostrar o material faltante em `web/src/pages/FilaPage.vue`
+- [ ] T083 [US1] Escrever em `server/tests/application/release-lots.test.ts` o caso da seção 1, passos 7 e 8, do quickstart: depois de liberar, alterar o perfil direto no banco; os lotes liberados mantêm parâmetros, gramas, minutos e reservas; uma nova liberação usa o perfil novo
+
 **Checkpoint**: Seção 1 do quickstart passa. Parar aqui já é um MVP demonstrável
 
 ---
@@ -187,16 +194,20 @@ Valem para toda tarefa abaixo, além das "Regras para agentes" da constituição
 
 - [ ] T052 [P] [US5] Escrever `server/tests/domain/printer-state.test.ts` falhando nas transições da seção "Transições da impressora" de `data-model.md`. Incluir: pausa não muda a impressora; `AccumulatedSeconds` ≥ `MaintenanceLimitHours` × 3600 no fim da preparação leva a InMaintenance; nota vazia recusa a confirmação da manutenção
 - [ ] T053 [P] [US5] Escrever `server/tests/domain/lot-state.test.ts` falhando: falha sem reimpressão vai a Failed; falha com reimpressão volta a Queued; segunda conclusão é ilegal; confirmar retirada após execução concluída vai a Completed e após falha não muda o lote
-- [ ] T055 [US5] Escrever `server/tests/application/run-execution.test.ts` com SQLite `:memory:`, falhando antes de T056: a conclusão grava uma única `ProductionOut`; a segunda conclusão não grava movimento; falha sem reimpressão faz `Unreserve` do restante; falha com reimpressão mantém a reserva e cria `PrintRun` Planned ligada à anterior
+- [ ] T055 [US5] Escrever `server/tests/application/run-execution.test.ts` com SQLite `:memory:`, falhando antes de T056, com os casos da tabela "Material real e reimpressão" do quickstart: conclusão grava uma única baixa lógica `ProductionOut` detalhada por lote de material e libera a sobra; segunda conclusão não grava movimento; falha exige material real ≥ 0, grava `Waste` só se positivo; sem reimpressão faz `Unreserve` do restante; com reimpressão mantém a reserva restante, tenta o complemento integral e cria `PrintRun` Planned ligada à anterior; complemento insuficiente confirma a falha e deixa `MissingMg` positivo; início recusado até completar; consumo acima da reserva usa saldo livre FIFO e nunca reserva alheia; retirada usa `OccupyingPrintRunId`
 
 ### Implementation for User Story 5
 
+- [ ] T086 [P] [US5] Escrever primeiro `server/tests/domain/material-consumption.test.ts` e ver falhar: consumo usa primeiro a reserva própria por `receivedAt` e id; só o excesso usa saldo livre do mesmo material, FIFO; nunca usa reserva de outro lote de produção; falta de 1 mg recusa tudo; consumo menor que a reserva devolve a sobra a liberar. Depois implementar `planConsumption` em `server/src/domain/rules/material-consumption.ts`
+- [ ] T087 [P] [US5] Escrever primeiro `server/tests/domain/reprint-reservation.test.ts` e ver falhar: complemento = max(0, PlannedMg − reserva restante); alocação integral FIFO ou nenhuma; com 40 g planejados, 30 g restantes e 5 g livres, não reserva nada e devolve 10 g faltando. Depois implementar `planReprintComplement` em `server/src/domain/rules/reprint-reservation.ts`
 - [ ] T054 [US5] Criar o tipo `PrintRun` em `server/src/domain/entities/print-run.ts` e as regras `transitionPrinter` em `server/src/domain/rules/printer-state.ts` e `transitionLot` em `server/src/domain/rules/lot-state.ts` até os dois testes de domínio passarem
-- [ ] T056 [US5] Implementar `server/src/application/use-cases/run-execution.ts` até `run-execution.test.ts` passar: `ProductionOut` na conclusão com `actualMaterialG` > 0; horas acumuladas somam o tempo real sem a pausa; motivos só os de `PrintFailureReason`
-- [ ] T057 [US5] Criar `server/migrations/0006-runs.sql`, `server/src/infrastructure/repositories/runs-repo.ts`, as rotas de execução e falha em `server/src/api/routes/runs.ts` e as de retirada, preparação, manutenção e indisponível em `server/src/api/routes/printer-events.ts`, conforme `contracts/producao.md`
+- [ ] T056 [US5] Implementar `server/src/application/use-cases/run-execution.ts` até `run-execution.test.ts` passar, usando `planConsumption` (T086) e `planReprintComplement` (T087): conclusão com `actualMaterialG` > 0; falha com `actualMaterialG` ≥ 0; horas acumuladas somam o tempo real sem a pausa; motivos só os de `PrintFailureReason`
+- [ ] T057 [US5] Criar `server/migrations/0006-runs.sql` (tabela `print_runs`; coluna `occupying_print_run_id` em `printers`; índice único de `stock_movements` em `print_run_id` + `stock_item_id` para ProductionOut e Waste; índice único de reserva por lote de produção + saldo), `server/src/infrastructure/repositories/runs-repo.ts`, as rotas de execução e falha em `server/src/api/routes/runs.ts` e as de retirada, preparação, manutenção e indisponível em `server/src/api/routes/printer-events.ts`, conforme `contracts/producao.md`
 - [ ] T058 [US5] Criar `web/src/pages/ExecucaoPage.vue` com iniciar, pausar, concluir, falhar, retirada e preparação, mostrando o estado do lote e o da impressora em campos separados
 
-**Checkpoint**: Seção 5 do quickstart passa. Máquina disponível só depois da preparação, e não com manutenção vencida
+- [ ] T088 [US5] Escrever `server/tests/application/concurrency.test.ts` com um arquivo SQLite temporário e duas conexões, cobrindo a seção "Atomicidade e concorrência" do quickstart para liberação, consumo e encerramento: disputa pelo mesmo saldo livre, duas conclusões da mesma execução, conclusão contra falha e rollback forçado entre movimento e estado. Ajustar `withTransaction` e os casos de uso se algum teste falhar
+
+**Checkpoint**: Seção 5 do quickstart passa, inclusive a tabela "Material real e reimpressão". Máquina disponível só depois da preparação, e não com manutenção vencida
 
 ---
 
@@ -220,6 +231,21 @@ Valem para toda tarefa abaixo, além das "Regras para agentes" da constituição
 
 ---
 
+## Phase 8.5: Cancelamento de pedido (US3, depois de US5 e US6)
+
+**Goal**: Cancelar pedido confirmado só com planejamento, nunca depois de execução iniciada, fatura ou pagamento (FR-009; spec, US3 cenários 8 e 9)
+
+**Independent Test**: Seção 3, passos 7 e 8, de `specs/001-reimplementar-printfarm/quickstart.md`
+
+**Por que aqui**: a regra consulta execuções (US5) e lançamentos financeiros (US6); antes deles não há o que bloquear
+
+- [ ] T084 [US3] Escrever primeiro `server/tests/domain/order-cancellation.test.ts` e ver falhar: QuotePending, Approved e InProduction cancelam se não há execução com início, fatura nem pagamento; cada impedimento vira um `blocker` (`EXECUTION_STARTED`, `INVOICE_EXISTS`, `PAYMENT_EXISTS`); execução iniciada e já encerrada também bloqueia; Cancelled continua imutável. Depois implementar `planOrderCancellation` em `server/src/domain/rules/order-cancellation.ts` e fazer `transitionSalesOrder` aceitar Approved e InProduction para Cancelled só por meio dela
+- [ ] T085 [US3] Escrever primeiro `server/tests/application/cancel-order.test.ts` e ver falhar: cancela pedido e lotes pendentes, remove itens de fila e execuções Planned sem início, faz `Unreserve` de cada reserva uma única vez e devolve exatamente o reservado ao livre; recusa com 409 `ORDER_CANCELLATION_BLOCKED` sem alterar nada; repetir não libera de novo. Depois implementar `server/src/application/use-cases/cancel-order.ts` e ligá-lo ao `PATCH /api/sales-orders/{id}/status` em `routes/sales-orders.ts`. Incluir no `concurrency.test.ts` (T088) a disputa de cancelamento contra início, fatura e pagamento
+
+**Checkpoint**: Seção 3, passos 7 e 8, do quickstart passam
+
+---
+
 ## Phase 9: User Story 7 - Ver prazo, custo e carga com a premissa (Priority: P3)
 
 **Goal**: Painel com atraso, máquinas em impressão, custo com parcelas e total vazio se falta premissa
@@ -235,7 +261,7 @@ Valem para toda tarefa abaixo, além das "Regras para agentes" da constituição
 
 - [ ] T065 [US7] Implementar `estimateCost` em `server/src/domain/rules/cost-estimate.ts` e `forecastBacklog` em `server/src/domain/rules/backlog-forecast.ts` até os testes passarem
 - [ ] T066 [US7] Criar `server/migrations/0008-dashboard.sql` com `deadline_alerts`, o tipo `DeadlineAlert` em `server/src/domain/entities/dashboard.ts` e gravar o alerta em `hourly-farm-job.ts`, com "hoje" calculado no fuso da farm por `server/src/infrastructure/clock/farm-date.ts` (`Intl.DateTimeFormat`)
-- [ ] T067 [US7] Implementar `GET /api/dashboard`, `GET /api/lots/{id}/cost-estimate`, `GET /api/dashboard/backlog`, `GET /api/dashboard/restock-suggestions` e `PUT /api/settings` em `server/src/api/routes/dashboard.ts` e `server/src/api/routes/settings.ts` conforme `contracts/painel.md`, com `server/src/infrastructure/repositories/dashboard-repo.ts`. `examplesAreFictional: false` responde 400
+- [ ] T067 [US7] Implementar `GET /api/dashboard` (consumo de sete dias = ProductionOut + Waste, uma vez por detalhe, sem Reserve e Unreserve), `GET /api/lots/{id}/cost-estimate`, `GET /api/dashboard/backlog`, `GET /api/dashboard/restock-suggestions` e `PUT /api/settings` em `server/src/api/routes/dashboard.ts` e `server/src/api/routes/settings.ts` conforme `contracts/painel.md`, com `server/src/infrastructure/repositories/dashboard-repo.ts`. `examplesAreFictional: false` responde 400
 - [ ] T068 [US7] Criar `web/src/pages/PainelPage.vue` mostrando os contadores, a conta do custo, a premissa ausente e a marca de dado fictício em todo número de exemplo
 
 **Checkpoint**: Seção 7 do quickstart passa
@@ -256,7 +282,7 @@ Valem para toda tarefa abaixo, além das "Regras para agentes" da constituição
 
 - [ ] T070 [US8] Criar `server/migrations/0009-audit.sql`, o tipo `AuditLog` em `server/src/domain/entities/audit.ts` e `server/src/application/use-cases/audit-writer.ts`, e chamá-lo, dentro da mesma transação, nas mudanças de estado de orçamento, pedido, lote e impressora já implementadas
 - [ ] T071 [US8] Implementar `GET /api/audit` em `server/src/api/routes/audit.ts` conforme `contracts/painel.md`, com `server/src/infrastructure/repositories/audit-repo.ts`. Sales, Purchasing e Operator recebem 403, coberto em `authz.test.ts`
-- [ ] T072 [US8] Garantir em `receive-purchase.ts` e `run-execution.ts` que a movimentação persiste kind, quantidade, custo unitário e a origem. Regra: "Movimentação guarda tipo, gramas, custo unitário e origem."
+- [ ] T072 [US8] Garantir em `receive-purchase.ts`, `run-execution.ts` e `cancel-order.ts` que a movimentação persiste kind, quantidade, custo unitário, saldo, lote de material e a origem, com uma linha por lote de material numa baixa que usa vários. Regra: "Movimentação guarda tipo, gramas, custo unitário e origem."
 
 **Checkpoint**: Seção 8 do quickstart passa
 
@@ -286,7 +312,8 @@ Valem para toda tarefa abaixo, além das "Regras para agentes" da constituição
 - **US5 (Phase 7)**: depende da US1 (lote na fila e reserva)
 - **US6 (Phase 8)**: depende da US1 para o pedido confirmado
 - **US7 (Phase 9)**: depende de US1 e US5 para máquinas em impressão e de US4 para a sugestão já gravada
-- **US8 (Phase 10)**: depende dos casos de uso cujas transições vai registrar (US1, US3, US5)
+- **Cancelamento de pedido (Phase 8.5)**: depende de US3, US5 e US6
+- **US8 (Phase 10)**: depende dos casos de uso cujas transições vai registrar (US1, US3, US5 e o cancelamento)
 - **Polish**: depois das histórias que a entrega decidiu incluir
 
 ### Within Each User Story
@@ -307,7 +334,7 @@ Valem para toda tarefa abaixo, além das "Regras para agentes" da constituição
 | `0003-masters.sql` | T034 | US2 |
 | `0004-quotes.sql` | T042 | US3 |
 | `0005-purchasing.sql` | T049 | US4 |
-| `0006-runs.sql` | T057 | US5 |
+| `0006-runs.sql` | T057 | US5 (inclui `printers.occupying_print_run_id` e os índices únicos de consumo e reserva) |
 | `0007-billing.sql` | T061 | US6 |
 | `0008-dashboard.sql` | T066 | US7 |
 | `0009-audit.sql` | T070 | US8 |
@@ -380,6 +407,7 @@ Um teste que importa uma regra inexistente falha na importação. Criar a regra 
 
 - [P] = outro arquivo, sem dependência incompleta
 - A história no rótulo amarra a tarefa à spec
+- T080–T083 corrigem a US1 já implementada; T084–T085 formam a fase 8.5; T086, T087 e T088 entram na US5. A lista em C# publicada em 2026-11-17 tinha outra numeração; não usar aqueles IDs.
 - Os IDs não seguem a ordem do arquivo em três pontos: T077 e T026 aparecem entre os testes da US1, T055 entre os testes da US5 e T076 antes de T075. A ordem de execução é a ordem do arquivo
 - Não copiar código de `docs_apoio/software_ref`; aquele diretório é leitura
 - Não criar módulo de assistente, cliente fiscal, SDK de impressora, ORM nem biblioteca de fila

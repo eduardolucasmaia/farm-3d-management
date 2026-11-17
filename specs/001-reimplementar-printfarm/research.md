@@ -1,7 +1,7 @@
 # Research: Reimplementar o núcleo da farm
 
 **Feature**: `specs/001-reimplementar-printfarm`
-**Date**: 2026-11-16 | **Revisado**: 2026-11-17 (troca de .NET 8 + SQL Server por Node.js + TypeScript + SQLite)
+**Date**: 2026-11-16 | **Revisado**: 2026-11-17 (troca de .NET 8 + SQL Server por Node.js + TypeScript + SQLite; integração das clarificações e da revisão de desenho publicadas na mesma data, itens 17 a 20)
 
 Cada item fecha uma escolha técnica. A spec não cita stack. Aqui a escolha fica escrita, com o que foi descartado. Quem implementa MUST seguir estes itens literalmente; mudar um deles é mudar o plan.
 
@@ -23,7 +23,7 @@ Cada item fecha uma escolha técnica. A spec não cita stack. Aqui a escolha fic
 - **Decision**: SQLite por `node:sqlite` (`DatabaseSync`), um arquivo em `FARM3D_DB_PATH` (padrão `data/farm3d.db`), uma conexão por processo, com `PRAGMA foreign_keys = ON`, `journal_mode = WAL` e `busy_timeout = 5000`. Sem ORM. SQL escrito à mão nos repositórios de `server/src/infrastructure/repositories/`. Testes de orquestração usam o mesmo SQLite em `:memory:` com todas as migrações aplicadas.
 - **Migrações**: arquivos `server/migrations/NNNN-nome.sql`, aplicados em ordem por `server/src/infrastructure/db/migrate.ts`, que registra cada um em `schema_migrations`. Migração já mesclada na branch base MUST NOT ser editada; mudança de esquema é arquivo novo. Os números 0001 a 0009 já estão reservados em `tasks.md`, um por história, para branches paralelas não colidirem.
 - **Transação**: `withTransaction(db, fn)` executa `BEGIN IMMEDIATE`, chama `fn` e faz `COMMIT`, ou `ROLLBACK` se `fn` lançar. `fn` MUST ser síncrona: se devolver `Promise`, o helper faz rollback e lança erro. Um `await` dentro da transação deixaria outra requisição usar a mesma conexão no meio dela.
-- **Rationale**: SQLite em memória executa transação de verdade, então o teste de "nenhuma reserva parcial" prova o rollback; o InMemory do EF Core não provava. Uma oficina com até 20 pessoas e 50 impressoras cabe em um escritor por vez.
+- **Rationale**: SQLite em memória executa transação de verdade, então o teste de "nenhuma reserva parcial" prova o rollback; o InMemory do EF Core não provava (objeção correta da revisão .NET, que pedia SQL Server real nos testes). Como o banco de produção também é SQLite, testar com SQLite prova o comportamento do banco que roda, sem diferença de dialeto. Uma oficina com até 20 pessoas e 50 impressoras cabe em um escritor por vez.
 - **Alternatives considered**: SQL Server em Docker, descartado no item 1. PostgreSQL, descartado por exigir instalação e serviço. ORM (Prisma, Drizzle, TypeORM), descartado como estrutura sem regra que a exija e por esconder o SQL da transação. `better-sqlite3`, descartado porque exige compilação nativa e o Node já traz SQLite.
 - **Risco aceito**: `node:sqlite` ainda pode mudar de API entre versões do Node. Todo uso fica em `server/src/infrastructure/db/`; nenhum outro diretório o importa.
 
@@ -46,20 +46,20 @@ Cada item fecha uma escolha técnica. A spec não cita stack. Aqui a escolha fic
 ## 6. Corte da prancha e prancha parcial
 
 - **Decision**: `splitLots(pieces, piecesPerPlate, secondsPerPlate, mgPerPlate)` em `server/src/domain/rules/lot-split.ts` devolve a lista de lotes. Quantidade de lotes = teto(peças / peças por prancha). Lotes cheios levam os segundos e os miligramas da prancha. O último, se incompleto, leva `peçasDoLote / peçasPorPrancha` de ambos, arredondado **para cima** ao segundo e ao miligrama inteiros. 10 e 4 produzem (4, 3600 s, 40000 mg), (4, 3600 s, 40000 mg), (2, 1800 s, 20000 mg).
-- **Rationale**: A proporção fecha o cenário de referência sem inventar tempo mínimo. Arredondar para cima nunca reserva menos material do que a prancha usa, o que segue o edge case "gramas reservadas não arredondam para esconder falta de saldo".
+- **Rationale**: A proporção fecha o cenário de referência sem inventar tempo mínimo. Arredondar para cima nunca reserva menos material do que a prancha usa, o que segue o edge case "gramas reservadas não arredondam para esconder falta de saldo". Isso também fecha o achado A1 de analysis.md: o valor persistido é o inteiro em mg, arredondado para cima. Na liberação, os três parâmetros da prancha são copiados para o lote de produção (item 19).
 - **Alternatives considered**: Última prancha com tempo cheio, descartada porque cobra capacidade que a prancha não usou. Recusar quantidade que não fecha prancha, descartada porque o cenário 10/4 deixaria de existir. Arredondamento ao mais próximo, descartado porque pode reservar 1 mg a menos.
 
 ## 7. Reserva FIFO
 
 - **Decision**: `allocateFifo(neededMg, lots)` em `server/src/domain/rules/fifo-reservation.ts` ordena os lotes de material por `receivedAt` e depois por `id`, e aloca miligramas até cobrir o necessário. Se a soma do livre não cobre, devolve recusa e alocação vazia. O caso de uso grava reservas e movimentações na mesma transação.
-- **Rationale**: FR-012. Ordem por data e desempate por identificador tornam o teste estável. `receivedAt` em ISO-8601 UTC ordena corretamente também como texto.
+- **Rationale**: FR-012. Ordem por data e desempate por identificador tornam o teste estável. `receivedAt` em ISO-8601 UTC ordena corretamente também como texto. A mesma ordem vale para consumo da reserva própria, excesso em saldo livre e complemento da reimpressão. A reserva de outro lote de produção nunca cobre excesso.
 - **Alternatives considered**: Reserva parcial do que houver: a spec recusa. Média de custo sem lote: a spec exige o lote mais antigo.
 
 ## 8. Estados da impressora
 
 - **Decision**: Campo operacional próprio, além de ativa/inativa. Transições só pelos eventos da spec (iniciar, concluir impressão, confirmar retirada, concluir preparação, entrar em manutenção, confirmar manutenção, marcar indisponível). O legado só tinha `IsActive` e "impressoras rodando" no painel. O estado operacional é exigência da constituição, não cópia do legado.
 - **Rationale**: Princípio III. Sem esse campo, "impressão concluída" vira "máquina livre".
-- **Alternatives considered**: Derivar o estado da execução aberta, descartado porque a spec proíbe inferir um estado do outro. A retirada e a preparação não são uma execução.
+- **Alternatives considered**: Derivar o estado da execução aberta, descartado porque a spec proíbe inferir um estado do outro. A retirada e a preparação não são uma execução. `Printer.OccupyingPrintRunId` identifica a execução física da mesa até a retirada; criar uma reimpressão Planned não troca esse vínculo.
 
 ## 9. Motivos de falha
 
@@ -138,3 +138,29 @@ Cada item fecha uma escolha técnica. A spec não cita stack. Aqui a escolha fic
 - **Decision**: Sem módulo de assistente, cliente de nota fiscal, SDK ou leitura de impressora, fila automática, ORM, biblioteca de fila ou cron, nem pacote nativo compilado.
 - **Rationale**: FR-026 e a seção "Fora de escopo" da constituição; itens 3, 4 e 5 acima.
 - **Alternatives considered**: Deixar o endpoint de chat desligado. Mesmo desligado, o módulo seria estrutura sem regra. Não criar.
+
+## 17. Transações e concorrência
+
+- **Decision**: Toda operação que lê e grava estoque, pedido, execução ou financeiro roda inteira dentro de `withTransaction` (item 3), com `BEGIN IMMEDIATE`. As leituras que decidem a regra (pedido, execuções, faturas, pagamentos, reservas, saldos) acontecem dentro da transação; mudanças, movimentos e trilha são confirmados juntos. Como o SQLite admite uma única transação de escrita por vez e a conexão é síncrona, duas operações nunca se intercalam: o efeito é o isolamento serializável. `SQLITE_BUSY` além do `busy_timeout` vira 503, e o cliente consulta o estado antes de repetir.
+- **Rationale**: As clarificações de consumo, complemento e cancelamento exigem atomicidade entre várias leituras e gravações, e que cancelamento e início, fatura ou pagamento nunca confirmem juntos. A revisão .NET resolvia isso com `Serializable` no SQL Server; aqui a garantia vem do próprio modelo de escrita do SQLite.
+- **Prova**: testes de orquestração com SQLite real (item 13), inclusive um arquivo temporário com duas conexões para as disputas descritas no quickstart (seção "Atomicidade e concorrência").
+- **Alternatives considered**: SQL Server com `Serializable`, descartado no item 1. Controle otimista por versão de linha, descartado porque não cobre a ausência de registros relacionados (por exemplo, "não existe fatura") e a escrita exclusiva já resolve.
+
+## 18. Consumo real e reserva de reimpressão
+
+- **Decision**: Regra pura planeja o consumo sobre as reservas próprias e o excesso sobre saldo livre FIFO. Quantidade positiva gera uma baixa lógica por execução, detalhada em movimentos por lote de material, com o custo de cada origem. Conclusão usa ProductionOut; falha usa Waste. Falha aceita zero sem movimento de saída. Insuficiência para o consumo aborta a operação inteira.
+- **Rationale**: FR-017, FR-018 e FR-024 exigem consumo único, proteção das reservas alheias e custo rastreável. Insuficiência só para o complemento da reimpressão não desfaz a falha nem o consumo; mantém a sobra reservada e bloqueia o início.
+- **Alternatives considered**: Baixar o estimado em silêncio, permitir estoque negativo, usar reserva alheia ou devolver material já gasto ao livre contrariam as respostas da clarificação. Gravar a saída num lote de material arbitrário perde a rastreabilidade.
+
+## 19. Preservação do perfil e retomada da reserva
+
+- **Decision**: Copiar os três valores da prancha (`ReleasedPiecesPerPlate`, `ReleasedSecondsPerPlate`, `ReleasedMgPerPlate`) para cada ProductionLot na liberação, sem criar versões de perfil. Complemento = max(0, PlannedMg − reserva restante). Tentar o complemento integral ao registrar reimpressão e de novo na tentativa de início; se couber, ativar a Planned existente.
+- **Rationale**: A quarta resposta da clarificação preserva o trabalho liberado e a segunda bloqueia início com reserva incompleta. Repetir a tentativa no início, depois de entrada de material, dá um caminho de recuperação sem endpoint manual de reserva nem job extra.
+- **Alternatives considered**: Recalcular a fila após editar o perfil, rejeitado pelo usuário na clarificação. Versões completas de perfil, estrutura desnecessária para preservar três valores. Complemento parcial, descartado pela reserva integral.
+
+## 20. Cancelamento antes de produção ou financeiro
+
+- **Decision**: O `PATCH /api/sales-orders/{id}/status` para Cancelled aciona a regra de cancelamento, que exige ausência de execução com StartedAt, de fatura e de pagamento. O pedido pode estar QuotePending, Approved ou InProduction só por planejamento. Cancela pedido e lotes pendentes, remove itens de fila e execuções Planned sem início, libera as reservas com Unreserve uma única vez e grava a trilha, tudo numa transação.
+- **Rationale**: FR-009 permite cancelar trabalho pendente e não abre estorno financeiro nem reversão de produção. Execução iniciada impede cancelamento mesmo depois de encerrada.
+- **Alternatives considered**: Cancelar só QuotePending, rejeitado na clarificação. Cancelamento após execução ou lançamento exigiria regras de reversão não autorizadas.
+- **Pendente**: a revisão .NET registrava a trilha desde a US1 ("a auditoria acompanha a escrita desde US1"). Neste desenho a trilha entra na US8 (T069–T072) e é acrescentada às transições já existentes. Antecipar a captura para a US1 é decisão da equipe; enquanto não houver decisão, vale tasks.md.
