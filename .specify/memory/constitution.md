@@ -1,5 +1,19 @@
 <!--
-Sync Impact Report
+Sync Impact Report (2.0.1)
+- Version change: 2.0.0 → 2.0.1 (PATCH: esclarecimento, sem mudança de regra)
+- Modified sections:
+  - Processo Spec Kit → "Estado" atualizado: CLI `specify` 1.4.1,
+    integração `opencode` com `--script py`, templates, scripts e
+    comandos versionados; comandos `speckit.git.*` não registrados no
+    OpenCode
+  - Comandos do fluxo → nome dos comandos no OpenCode (`/speckit.plan`)
+  - Extensão git → padrão de branch por história (`<autor>/NNN-slug`)
+    e branch base da feature
+- Resolved TODOs: TODO(SPECIFY_VERSION) → 1.4.1
+- Artefatos conferidos: ✅ .specify/memory/knowledge-graph.md
+- Follow-up TODOs: TODO(SOFTWARE_REF) continua aberto
+
+Sync Impact Report (2.0.0)
 - Version change: 1.0.0 → 2.0.0 (MAJOR: seção "Regras de domínio" removida
   daqui e princípios renumerados)
 - Modified principles (antigo → novo):
@@ -40,9 +54,7 @@ Sync Impact Report
   - ✅ .specify/memory/knowledge-graph.md (criado)
   - ⚠ .specify/templates/ não existe neste repositório; nada a propagar
 - Follow-up TODOs:
-  - TODO(SPECIFY_VERSION): instalar a CLI e registrar a versão em
-    "Processo Spec Kit". Em 2026-11-17 a CLI não estava instalada na
-    máquina que fez esta emenda.
+  - TODO(SPECIFY_VERSION): resolvido em 2.0.1 (CLI 1.4.1).
   - TODO(SOFTWARE_REF): `docs_apoio/software_ref` não está versionado
     aqui. Registrar onde ele vive ou versioná-lo.
 -->
@@ -284,17 +296,24 @@ Regras:
   cada agente MUST ser alterados só pela CLI, nunca à mão.
 - Atualizar a CLI ou uma integração MUST ser um commit separado, sem
   mudança de spec ou código junto.
-- Estado em 2026-11-17: o repositório tem `.specify/memory/`,
-  `.specify/feature.json` e a extensão `git` 1.0.4. Não tem
-  `.specify/templates/`, `.specify/scripts/` nem comandos de agente
-  versionados. Quem clona precisa rodar `specify integration install`
-  antes de usar `/speckit-*`.
+- Estado em 2026-11-17: CLI `specify` 1.4.1; integração padrão
+  `opencode`, instalada com `--script py`; extensão `git` 1.0.4.
+  Comandos em `.opencode/commands/speckit.*.md`, templates em
+  `.specify/templates/` e scripts em `.specify/scripts/`, todos
+  versionados. Quem clona já tem os comandos; a CLI só é necessária
+  para atualizar a integração ou as extensões. `specify integration
+  status` MUST responder sem arquivo modificado ou ausente.
+- Os comandos da extensão git (`speckit.git.*`) não estão registrados
+  na integração OpenCode. Os hooks de commit automático podem não
+  rodar; nesse caso o commit é manual, com a mesma mensagem
+  `conventional`.
 
 ### Comandos do fluxo
 
 O nome muda com o agente: `/speckit-plan` (skills, como Claude Code e
 Copilot), `/speckit.plan` (arquivos de comando), `$speckit-plan`
-(Codex). O comando é o mesmo.
+(Codex). O comando é o mesmo. Neste repositório, com a integração
+`opencode`, o formato é `/speckit.plan`.
 
 | Ordem | Comando | Lê | Escreve | Obrigatório |
 |-------|---------|----|---------|-------------|
@@ -341,6 +360,11 @@ Regras:
   implement. Durante a implementação o commit é manual, ao fim de cada
   checkpoint de `tasks.md`, com os testes verdes.
 - `speckit.git.validate` confere se a branch segue o padrão.
+- A branch `NNN-slug` é a base de integração da feature. Cada
+  história ou fase é implementada numa branch `<autor>/NNN-<história>`
+  criada a partir da base e volta por pull request. Branch de história
+  MUST NOT alterar artefato de desenho; correção de desenho vai num
+  commit só de documentação, antes do código que depende dela.
 
 ## Regras para agentes
 
@@ -409,4 +433,4 @@ Conferência obrigatória:
 - Antes de encerrar a feature: `/speckit-converge` responde
   `Converged`.
 
-**Version**: 2.0.0 | **Ratified**: 2026-11-16 | **Last Amended**: 2026-11-17
+**Version**: 2.0.1 | **Ratified**: 2026-11-16 | **Last Amended**: 2026-11-17

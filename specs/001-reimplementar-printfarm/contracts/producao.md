@@ -28,9 +28,13 @@ Lista os lotes de produção da fila com id, plannedGrams, plannedMinutes, reser
 
 `missingMaterialG = max(0, plannedGrams - reservedGrams)`. É um impedimento calculado, não um novo estado. Reimpressão sem complemento integral continua Queued com esse valor positivo. Disponibilidade da impressora é conferida separadamente. FR-018.
 
+## GET /api/lots?status=
+
+Papéis: Production, Operator, Admin. `status` aceita uma lista separada por vírgula de valores de `ProductionLotStatus`; sem `status`, devolve Released e Queued. Itens: `id`, `orderNumber`, `productName`, `materialName`, `lotIndex`, `qtyPlanned`, `plannedGrams`, `plannedMinutes`, `status`, `printerId`, `printerName`, `position`. Ordem: posição na fila, depois id.
+
 ## POST /api/lots/{id}/queue
 
-Corpo: `{ "printerId": number|null, "priority": number }`.
+Corpo: `{ "printerId": number|null, "priority": number }`. Só lote Released; outro estado: 409.
 
 - 201 para um lote Released ainda sem fila; 200 para atribuir ou atualizar o item Queued já existente. Nunca duplicar o item ativo do lote de produção.
 - 409: impressora inativa, indisponível, ocupada, em manutenção ou incompatível. Lista vazia de materiais aceita qualquer material.

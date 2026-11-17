@@ -16,7 +16,7 @@ Reimplementar o núcleo do PrintFarm (cadastro, orçamento, pedido, lote de prod
 
 **Language/Version**: TypeScript executado direto pelo Node.js 24 LTS ou mais novo (API e domínio); TypeScript no Vue 3 + Vite 6 (SPA)
 
-**Primary Dependencies**: servidor: `fastify` 5, `@fastify/cors`, `@fastify/multipart`, `jose`. Desenvolvimento: `typescript` 5.8 ou mais novo, `vitest`, `@types/node`. SPA: as de `web/package.json`. Nenhuma outra dependência sem registro neste plan ou em research.md
+**Primary Dependencies**: servidor: `fastify` 5, `@fastify/cors`, `@fastify/multipart`, `jose`. Desenvolvimento: `typescript` 5.9, `vitest` 4.1.12 ou mais novo (versões anteriores têm falhas críticas conhecidas), `@types/node` 24. SPA: as de `web/package.json`, com `vue-tsc` 3 e sem `@vue/test-utils`, que nenhum teste usa e trazia dependências vulneráveis. `npm audit` MUST ficar sem achado alto ou crítico. Nenhuma outra dependência sem registro neste plan ou em research.md
 
 **Storage**: SQLite embutido do Node (`node:sqlite`), arquivo em `FARM3D_DB_PATH`. Testes de orquestração: o mesmo SQLite em `:memory:`. Migrações SQL numeradas em `server/migrations/`. Arquivo 3D em disco, caminho relativo no banco. Sem Docker
 

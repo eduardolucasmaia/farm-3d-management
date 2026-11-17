@@ -1,20 +1,35 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import { useSessionStore } from './stores/session'
+import {
+  createMemoryHistory,
+  createRouter,
+  createWebHistory,
+  type RouteRecordRaw,
+  type Router,
+} from 'vue-router'
+import { useSessionStore } from '../stores/session'
 
-const routes = []
+// Rotas com meta.requiresAuth exigem sessão. Cada história acrescenta suas rotas aqui, só acréscimo.
+const routes: RouteRecordRaw[] = [
+  { path: '/', redirect: '/fila' },
+  { path: '/entrar', name: 'entrar', component: () => import('../pages/EntrarPage.vue') },
+  { path: '/fila', name: 'fila', component: () => import('../pages/FilaPage.vue'), meta: { requiresAuth: true } },
+  { path: '/pedidos', name: 'pedidos', component: () => import('../pages/PedidoPage.vue'), meta: { requiresAuth: true } },
+]
 
-const router = createRouter({
-  history: createWebHistory(),
-  routes
-})
+export function createAppRouter(mode: 'web' | 'memory' = 'web'): Router {
+  const router = createRouter({
+    history: mode === 'memory' ? createMemoryHistory() : createWebHistory(),
+    routes,
+  })
 
-router.beforeEach((to, from, next) => {
-  const session = useSessionStore()
-  if (to.matched.some(record => record.meta.requiresAuth) && !session.hasSession) {
-    next('/entrar')
-  } else {
-    next()
-  }
-})
+  router.beforeEach((to) => {
+    const session = useSessionStore()
+    if (to.matched.some((record) => record.meta.requiresAuth) && !session.hasSession) {
+      return { path: '/entrar', query: { voltar: to.fullPath } }
+    }
+    return true
+  })
 
-export default router
+  return router
+}
+
+export default createAppRouter
