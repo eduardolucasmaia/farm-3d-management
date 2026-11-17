@@ -24,3 +24,5 @@ Corpo: `{ "amount": decimal, "method": "Cash"|"Card"|"Pix"|"BankTransfer"|"Other
 ## GET /api/sales-orders/{id}/payments
 
 O total pago pode ser menor, igual ou maior que a soma das faturas. O sistema não concilia banco e não bloqueia produção por inadimplência nesta feature.
+
+Fatura e pagamento verificam o pedido e gravam o lançamento na mesma transação de escrita exclusiva, na disciplina de `comercial.md`. Se o cancelamento vencer a disputa, o lançamento é recusado; se o lançamento for confirmado primeiro, o cancelamento é recusado. Não basta validar o pedido fora da transação. Esta regra não adiciona estornos. FR-009 e FR-021.
