@@ -1,6 +1,6 @@
 # Contract: Comercial
 
-Sessão obrigatória. Escrita de orçamento e pedido: Sales, Admin. Leitura: Sales, Production, Admin.
+Sessão obrigatória. Escrita de orçamento e pedido: Sales, Admin. Leitura: Sales, Production, Admin. Convenções de erro, números e datas: contracts/auth.md. Preços em reais com até 2 casas; `validUntil` e `promisedDate` como data `AAAA-MM-DD`.
 
 ## Orçamentos
 

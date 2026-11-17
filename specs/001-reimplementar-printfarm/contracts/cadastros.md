@@ -1,6 +1,6 @@
 # Contract: Cadastros
 
-Todos exigem sessão. Respostas 401 sem sessão, 403 sem papel, 400 com a regra violada em texto estável.
+Todos exigem sessão. Respostas 401 sem sessão, 403 sem papel, 400 com a regra violada em texto estável. Convenções de erro, números e datas: contracts/auth.md. Unidades na API: preço em reais (2 casas), custo de referência em reais por kg (2 casas), ponto de reposição em gramas (3 casas), diâmetro em mm (3 casas), minutos por prancha (2 casas), gramas por prancha (3 casas), taxa de hora-máquina em reais por hora (2 casas), energia em kWh por hora (3 casas), minutos de preparação (2 casas), limite de manutenção em horas inteiras.
 
 | Recurso | GET lista e GET id | POST e PUT | Papel de escrita |
 |---------|--------------------|------------|------------------|

@@ -1,6 +1,6 @@
 # Contract: Estoque e compras
 
-Sessão obrigatória. Escrita: Purchasing, Admin. Leitura de saldo: Purchasing, Production, Admin.
+Sessão obrigatória. Escrita: Purchasing, Admin. Leitura de saldo: Purchasing, Production, Admin. Convenções de erro, números e datas: contracts/auth.md. Quilos com até 6 casas, gramas com até 3, preço por quilo em reais com até 2.
 
 ## POST /api/purchase-orders
 

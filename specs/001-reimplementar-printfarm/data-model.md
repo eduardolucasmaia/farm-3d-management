@@ -1,11 +1,32 @@
 # Data Model: Reimplementar o núcleo da farm
 
-**Feature**: `specs/001-reimplementar-printfarm`  
-**Date**: 2026-11-16
+**Feature**: `specs/001-reimplementar-printfarm`
+**Date**: 2026-11-16 | **Revisado**: 2026-11-17 (unidades inteiras para a stack Node.js + SQLite)
 
 Nomes de código em inglês, rótulos de tela em português, conforme o vocabulário da constituição. "Lote" sozinho não aparece em rótulo.
 
-Dinheiro: `decimal` quantizado a `0.01`, metade para cima. Gramas: `decimal` com três casas. Instantes: `DateTimeOffset`.
+## Unidades e representação
+
+Todo valor numérico do domínio e do banco é inteiro, numa escala fixa. O sufixo do nome diz a unidade. Nenhum campo fracionário existe no domínio (research.md item 11).
+
+| Sufixo | Unidade | Casas aceitas na API | Exemplo |
+|--------|---------|----------------------|---------|
+| `Cents` | centavo | 2 (reais) | R$ 12,50 → `1250` |
+| `CentsPerKg` | centavo por kg | 2 (reais por kg) | R$ 89,90/kg → `8990` |
+| `CentsPerHour` | centavo por hora | 2 (reais por hora) | R$ 4,00/h → `400` |
+| `CentsPerMwh` | centavo por MWh | 5 (reais por kWh) | R$ 0,65632/kWh → `65632` |
+| `Mg` | miligrama | 3 (gramas) ou 6 (quilos) | 40 g → `40000`; 1 kg → `1000000` |
+| `WhPerHour` | Wh por hora | 3 (kWh por hora) | 0,12 kWh/h → `120` |
+| `Seconds` | segundo | 2 (minutos) | 60 min → `3600` |
+| `Um` | micrômetro | 3 (mm) | 1,75 mm → `1750` |
+
+- A API recebe e devolve as unidades humanas dos contratos (reais, gramas, quilos, minutos, R$/kWh, kWh por hora). A conversão acontece só na rota, com `parseScaled` e `formatScaled` de `server/src/domain/units.ts`. Valor com mais casas que a tabela: 400.
+- Multiplicação seguida de divisão usa `mulDivRoundHalfUp` (dinheiro, metade para cima) ou `mulDivCeil` (peso e tempo de prancha parcial, para cima).
+- Quantidade de peças e horas de limite de manutenção são inteiros sem escala.
+- Instante: texto ISO-8601 em UTC com milissegundos (`2026-11-17T13:05:00.000Z`). Data sem hora: `AAAA-MM-DD`. Hora local: `HH:mm`.
+- Identificador: `INTEGER` autoincremento, exceto `User.Id`, que é UUID em texto.
+- Enum: texto com o valor exato da tabela abaixo; a coluna tem `CHECK` com a lista de valores.
+- Booleano: `INTEGER` 0 ou 1.
 
 ## Enums
 
@@ -27,17 +48,23 @@ Rótulos de `ProductionLotStatus`: Aguardando planejamento, Liberado, Na fila, E
 
 Rótulos de `PrinterOperationalStatus`: Disponível, Em impressão, Aguardando retirada, Em preparação, Em manutenção, Indisponível.
 
+## User
+
+- **User**: Id (UUID); Email obrigatório, único, guardado em minúsculas; Name obrigatório; PasswordHash no formato `scrypt$<saltBase64>$<hashBase64>`; Role (AppRole); FailedLoginCount ≥ 0; LockedUntil instante opcional; CreatedAt.
+- Política de senha e travamento: research.md item 4. "Senha guardada de forma irreversível."
+
 ## FarmSettings
 
 Uma linha só.
 
 | Campo | Regra |
 |-------|--------|
-| EnergyTariffPerKwh | decimal opcional. Nulo significa premissa ausente. |
+| EnergyTariffCentsPerMwh | inteiro opcional ≥ 0. Nulo significa premissa ausente. |
 | CalendarSummary | texto obrigatório. Padrão: "segunda a sexta, 08:00–18:00". |
-| WorkDays | flags. Padrão: segunda a sexta. |
-| WorkStart / WorkEnd | hora local. Padrão: 08:00 e 18:00. |
-| ExamplesAreFictional | bool. MUST permanecer verdadeiro enquanto os números de exemplo não forem série medida. |
+| WorkDays | lista de dias da semana (1 = segunda … 7 = domingo). Padrão: 1 a 5. |
+| WorkStart / WorkEnd | hora local `HH:mm`. Padrão: 08:00 e 18:00. |
+| TimeZone | fuso IANA. Padrão: `America/Sao_Paulo`. |
+| ExamplesAreFictional | bool. MUST permanecer verdadeiro enquanto os números de exemplo não forem série medida. Coluna com `CHECK` que só aceita 1. |
 
 ## Customer, Supplier, Color
 
@@ -47,34 +74,34 @@ Uma linha só.
 
 ## Material e estoque
 
-- **Material**: Name obrigatório; Kind obrigatório; ReferenceCostPerKg ≥ 0; ReorderPointGrams nulo ou ≥ 0; DiameterMm nulo ou > 0; ColorId opcional.
-- **MaterialLot**: MaterialId e SupplierId obrigatórios; LotCode obrigatório e único por material; ReceivedAt obrigatório; InitialWeightG > 0; CurrentWeightG ≥ 0 e ≤ InitialWeightG; CostPerGram ≥ 0.
-- **StockItem**: MaterialId obrigatório; MaterialLotId opcional (nulo = agregado do material, não usado na reserva); QuantityG ≥ 0; ReservedG ≥ 0; ReservedG ≤ QuantityG. Livre = QuantityG − ReservedG.
-- **StockMovement**: Kind obrigatório; QuantityG > 0; UnitCost ≥ 0; CreatedAt; UserId; origem opcional em ProductionLotId, PrintRunId ou PurchaseReceiptId. "Movimentação guarda tipo, gramas, custo unitário e origem."
+- **Material**: Name obrigatório; Kind obrigatório; ReferenceCostCentsPerKg ≥ 0; ReorderPointMg nulo ou ≥ 0; DiameterUm nulo ou > 0; ColorId opcional.
+- **MaterialLot**: MaterialId e SupplierId obrigatórios; LotCode obrigatório e único por material; ReceivedAt obrigatório; InitialWeightMg > 0; CurrentWeightMg ≥ 0 e ≤ InitialWeightMg; CostCentsPerKg ≥ 0.
+- **StockItem**: MaterialId obrigatório; MaterialLotId opcional (nulo = agregado do material, não usado na reserva); QuantityMg ≥ 0; ReservedMg ≥ 0; ReservedMg ≤ QuantityMg. Livre = QuantityMg − ReservedMg.
+- **StockMovement**: Kind obrigatório; QuantityMg > 0; UnitCostCentsPerKg ≥ 0; CreatedAt; UserId; origem opcional em ProductionLotId, PrintRunId ou PurchaseReceiptId. "Movimentação guarda tipo, gramas, custo unitário e origem."
 
 ## Catálogo de produção
 
-- **File3D**: Name obrigatório. **File3DVersion**: VersionLabel obrigatório; StoragePath obrigatório; CreatedAt.
-- **PrintProfile**: Name obrigatório; PiecesPerPlate ≥ 1 inteiro; MinutesPerPlate > 0; GramsPerPlate > 0; MaterialId opcional. "Peças por prancha, minutos por prancha e gramas por prancha, todos maiores que zero."
-- **Product** (modelo): Name e Sku obrigatórios, Sku único; DefaultSellPrice ≥ 0; DefaultPrintProfileId obrigatório para liberar; IsForSale bool; listas de ColorId e tamanhos (texto curto) oferecidos. Preço de venda não é custo.
-- **Printer**: Name obrigatório; CostPerHour ≥ 0; EnergyKwhPerHour nulo ou ≥ 0; MaintenanceLimitHours > 0; AccumulatedHours ≥ 0; PreparationMinutes ≥ 0; IsActive; OperationalStatus; HourRateExcludesFilamentAndEnergy MUST ser verdadeiro e não editável. "Limite de horas de manutenção maior que zero." "A taxa de hora-máquina não inclui filamento nem energia."
+- **File3D**: Name obrigatório. **File3DVersion**: VersionLabel obrigatório; StoragePath obrigatório e relativo a `FARM3D_FILES_DIR`; CreatedAt.
+- **PrintProfile**: Name obrigatório; PiecesPerPlate ≥ 1 inteiro; SecondsPerPlate > 0; MgPerPlate > 0; MaterialId opcional. "Peças por prancha, minutos por prancha e gramas por prancha, todos maiores que zero."
+- **Product** (modelo): Name e Sku obrigatórios, Sku único; DefaultSellPriceCents ≥ 0; DefaultPrintProfileId obrigatório para liberar; IsForSale bool; listas de ColorId e tamanhos (texto curto) oferecidos. Preço de venda não é custo.
+- **Printer**: Name obrigatório; CostCentsPerHour ≥ 0; EnergyWhPerHour nulo ou ≥ 0; MaintenanceLimitHours > 0 inteiro; AccumulatedSeconds ≥ 0; PreparationSeconds ≥ 0; IsActive; OperationalStatus; HourRateExcludesFilamentAndEnergy MUST ser verdadeiro e não editável. "Limite de horas de manutenção maior que zero." "A taxa de hora-máquina não inclui filamento nem energia."
 - **PrinterMaterial**: par PrinterId + MaterialId. Lista vazia significa compatível com qualquer material.
 - **Operator**: Name obrigatório; UserId opcional.
 
 ## Comercial
 
-- **Quote**: Number único; CustomerId; Status; ValidUntil opcional; Notes; CreatedAt; TotalAmount = soma das linhas. Transições: Draft → Sent; Draft ou Sent → Approved; Draft, Sent ou Approved → Rejected; Draft, Sent ou Approved → Expired só pelo processamento periódico quando ValidUntil já passou; Approved → OrderGenerated só na geração do pedido. Rejected, Expired e OrderGenerated não geram pedido. "Rejeitado e pedido gerado não são expirados."
-- **QuoteLine**: ProductId; Quantity > 0 inteiro; UnitPrice ≥ 0; MaterialId opcional. Subtotal = Quantity × UnitPrice, quantizado ao centavo, metade para cima.
-- **SalesOrder**: Number único; CustomerId; QuoteId opcional; CommercialStatus; PromisedDate opcional no rascunho manual e obrigatória na geração por orçamento; FreightAmount ≥ 0; PackagingAmount ≥ 0; Notes. Pedido manual nasce QuotePending. De QuotePending só para Approved ou Cancelled. Cancelled não muda. "Pedido em confirmação pendente não gera lote de produção, fatura nem pagamento."
-- **OrderLine**: ProductId; Quantity > 0; UnitPrice ≥ 0; MaterialId obrigatório na liberação; ColorId obrigatório se o modelo oferece cores; Size obrigatório se o modelo oferece tamanhos. A escolha fica gravada.
+- **Quote**: Number único; CustomerId; Status; ValidUntil data opcional; Notes; CreatedAt; TotalCents = soma das linhas. Transições: Draft → Sent; Draft ou Sent → Approved; Draft, Sent ou Approved → Rejected; Draft, Sent ou Approved → Expired só pelo processamento periódico quando ValidUntil já passou no dia local da farm; Approved → OrderGenerated só na geração do pedido. Rejected, Expired e OrderGenerated não geram pedido. "Rejeitado e pedido gerado não são expirados."
+- **QuoteLine**: ProductId; Quantity > 0 inteiro; UnitPriceCents ≥ 0; MaterialId opcional. SubtotalCents = Quantity × UnitPriceCents, exato.
+- **SalesOrder**: Number único; CustomerId; QuoteId opcional; CommercialStatus; PromisedDate data opcional no pedido manual e obrigatória na geração por orçamento; FreightCents ≥ 0; PackagingCents ≥ 0; Notes. Pedido manual nasce QuotePending. De QuotePending só para Approved ou Cancelled. Cancelled não muda. Demais transições: contracts/comercial.md. "Pedido em confirmação pendente não gera lote de produção, fatura nem pagamento."
+- **OrderLine**: ProductId; Quantity > 0; UnitPriceCents ≥ 0; MaterialId obrigatório na liberação; ColorId obrigatório se o modelo oferece cores; Size obrigatório se o modelo oferece tamanhos. A escolha fica gravada.
 
 ## Produção
 
-- **ProductionLot**: SalesOrderId; OrderLineId; ProductId; MaterialId; QtyPlanned > 0; QtyCompleted ≥ 0 e ≤ QtyPlanned; Status; PlannedGrams > 0; PlannedMinutes > 0; CreatedAt; ReleasedAt opcional; CompletedAt opcional.
-- **Corte**: quantidade de lotes = teto(peças da linha / peças por prancha). Lote cheio: PlannedGrams = GramsPerPlate e PlannedMinutes = MinutesPerPlate. Lote incompleto: ambos × (peças do lote / peças por prancha). "10 peças com 4 por prancha produzem 3 lotes, o último com metade do tempo e metade do material."
-- **ProductionMaterialReservation**: ProductionLotId; StockItemId; GramsReserved > 0. Uma liberação bem-sucedida cobre PlannedGrams. "Saldo insuficiente recusa a liberação inteira, sem reserva parcial." "Repetir a liberação já reservada é recusado."
+- **ProductionLot**: SalesOrderId; OrderLineId; ProductId; MaterialId; QtyPlanned > 0; QtyCompleted ≥ 0 e ≤ QtyPlanned; Status; PlannedMg > 0; PlannedSeconds > 0; CreatedAt; ReleasedAt opcional; CompletedAt opcional.
+- **Corte**: quantidade de lotes = teto(peças da linha / peças por prancha). Lote cheio: PlannedMg = MgPerPlate e PlannedSeconds = SecondsPerPlate. Lote incompleto: ambos × (peças do lote / peças por prancha), arredondados para cima ao inteiro. "10 peças com 4 por prancha produzem 3 lotes, o último com metade do tempo e metade do material."
+- **ProductionMaterialReservation**: ProductionLotId; StockItemId; ReservedMg > 0. Uma liberação bem-sucedida cobre PlannedMg. "Saldo insuficiente recusa a liberação inteira, sem reserva parcial." "Repetir a liberação já reservada é recusado."
 - **PrintQueueItem**: ProductionLotId único na fila ativa; PrinterId opcional; Priority inteiro; Position inteiro ≥ 1.
-- **PrintRun**: ProductionLotId; PrinterId; OperatorId opcional; Status; StartedAt; EndedAt; PausedSeconds ≥ 0; FailureReason; FailureNotes; ActualMaterialG nulo até a conclusão, e na conclusão > 0; ActualMinutes; MaterialLotId opcional; ReprintOfPrintRunId opcional.
+- **PrintRun**: ProductionLotId; PrinterId; OperatorId opcional; Status; StartedAt; EndedAt; PausedSeconds ≥ 0; FailureReason; FailureNotes; ActualMaterialMg nulo até a conclusão, e na conclusão > 0; ActualSeconds; MaterialLotId opcional; ReprintOfPrintRunId opcional.
 
 ### Transições do lote de produção
 
@@ -112,30 +139,30 @@ Pausa do lote não muda o estado da impressora: ela permanece Em impressão. Con
 
 "Concluir a impressão deixa o lote aguardando retirada e a impressora aguardando retirada." "A impressora só volta a disponível depois da retirada e da preparação, e somente se as horas acumuladas estiverem abaixo do limite."
 
-Horas acumuladas aumentam pelo tempo real de impressão na conclusão, não pela pausa.
+Horas acumuladas aumentam pelo tempo real de impressão na conclusão, não pela pausa. Comparação com o limite: AccumulatedSeconds ≥ MaintenanceLimitHours × 3600.
 
 ## Compras e financeiro
 
 - **PurchaseOrder**: SupplierId; Number único; Status; OrderedAt; ExpectedAt opcional. Draft → Sent → PartiallyReceived → Received. Cancelled a partir de Draft ou Sent, se nada foi recebido.
-- **PurchaseOrderLine**: MaterialId; QuantityKg > 0; UnitPrice ≥ 0.
-- **PurchaseReceipt**: PurchaseOrderId; ReceivedAt; Notes. **PurchaseReceiptLine**: MaterialLotId; ReceivedWeightG > 0. "Recebimento com peso zero ou negativo é recusado." 1 kg pedido = 1000 g recebidos na comparação de completo.
-- **Invoice**: SalesOrderId de pedido que não está QuotePending nem Cancelled; Number; Amount > 0; IssuedAt; DocumentReference opcional. Não há entidade de nota fiscal.
-- **Payment**: SalesOrderId nas mesmas condições; Amount > 0; Method; PaidAt; Reference opcional.
+- **PurchaseOrderLine**: MaterialId; QuantityMg > 0 (a API recebe quilos); UnitPriceCentsPerKg ≥ 0.
+- **PurchaseReceipt**: PurchaseOrderId; ReceivedAt; Notes. **PurchaseReceiptLine**: MaterialLotId; ReceivedWeightMg > 0. "Recebimento com peso zero ou negativo é recusado." Pedido completo quando a soma de ReceivedWeightMg iguala QuantityMg. O lote de material criado recebe CostCentsPerKg = UnitPriceCentsPerKg da linha.
+- **Invoice**: SalesOrderId de pedido que não está QuotePending nem Cancelled; Number; AmountCents > 0; IssuedAt; DocumentReference opcional. Não há entidade de nota fiscal.
+- **Payment**: SalesOrderId nas mesmas condições; AmountCents > 0; Method; PaidAt; Reference opcional.
 
 ## Leitura operacional
 
-- **DeadlineAlert**: RunAt; OverdueCount; DueTodayCount. Atrasado = PromisedDate < hoje e existe lote não Completed e não Cancelled. Vencendo hoje = PromisedDate no dia local da farm.
-- **RestockSuggestion**: RunAt; MaterialId; AvailableGrams; SuggestedOrderGrams. Só quando ReorderPointGrams não é nulo e o livre do material está abaixo dele. SuggestedOrderGrams = ReorderPointGrams − livre, mínimo zero.
+- **DeadlineAlert**: RunAt; OverdueCount; DueTodayCount. Atrasado = PromisedDate < hoje e existe lote não Completed e não Cancelled. Vencendo hoje = PromisedDate igual a hoje. "Hoje" é a data no fuso de FarmSettings.TimeZone.
+- **RestockSuggestion**: RunAt; MaterialId; AvailableMg; SuggestedOrderMg. Só quando ReorderPointMg não é nulo e o livre do material está abaixo dele. SuggestedOrderMg = ReorderPointMg − livre, mínimo zero.
 - **AuditLog**: EntityName; EntityId; Action; UserId; At; FromStatus; ToStatus. "Trilha guarda entidade, ação, usuário, momento, estado anterior e estado novo." Leitura: Admin e Production.
 
 ## Custo estimado (valor calculado, não tabela)
 
-Entradas: gramas, preço por grama, horas, kWh por hora, tarifa por kWh, taxa de hora-máquina.
+Entradas: miligramas, centavos por kg, segundos, Wh por hora, centavos por MWh, centavos por hora.
 
-- Filamento = gramas × preço por grama.
-- Energia = horas × kWh por hora × tarifa.
-- Máquina = horas × taxa.
-- Total só existe se tarifa, preço por grama, taxa e energia por hora estão presentes.
+- Filamento = mg × centavos por kg ÷ 1.000.000, ao centavo, metade para cima.
+- Energia = segundos × Wh por hora × centavos por MWh ÷ 3.600.000.000, ao centavo, metade para cima.
+- Máquina = segundos × centavos por hora ÷ 3.600, ao centavo, metade para cima.
+- Total = soma das três parcelas já arredondadas. Só existe se tarifa, custo por kg, taxa e energia por hora estão presentes.
 - A resposta inclui a frase: "A taxa de hora-máquina não inclui filamento nem energia."
 
-Backlog = soma de PlannedMinutes ainda não executados, em horas. A previsão declara o calendário vigente, o paralelismo e a compatibilidade. Aproximação "horas ÷ máquinas equivalentes" só com a frase de que as capacidades foram tratadas como equivalentes.
+Backlog = soma de PlannedSeconds ainda não executados, em horas. A previsão declara o calendário vigente, o paralelismo e a compatibilidade. Aproximação "horas ÷ máquinas equivalentes" só com a frase de que as capacidades foram tratadas como equivalentes.

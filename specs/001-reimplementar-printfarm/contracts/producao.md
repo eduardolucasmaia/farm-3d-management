@@ -1,6 +1,6 @@
 # Contract: Produção
 
-Sessão obrigatória.
+Sessão obrigatória. Convenções de erro, números e datas: contracts/auth.md. Gramas com até 3 casas; minutos com até 2.
 
 | Ação | Papéis |
 |------|--------|
