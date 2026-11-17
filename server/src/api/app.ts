@@ -6,6 +6,9 @@ import type { Db } from '../infrastructure/db/database.ts'
 import { verifyToken } from '../infrastructure/auth/jwt.ts'
 import { sendProblem } from './problem.ts'
 import { registerAuthRoutes } from './routes/auth.ts'
+import { registerPrinterRoutes } from './routes/cadastros/printers.ts'
+import { registerLotRoutes } from './routes/lots.ts'
+import { registerSalesOrderRoutes } from './routes/sales-orders.ts'
 
 export interface AppDeps {
   db: Db
@@ -72,6 +75,9 @@ export async function buildApp(deps: AppDeps, options: { logger?: boolean } = {}
 
   // Registro de rotas: um por arquivo de contrato. Só acréscimo neste bloco.
   registerAuthRoutes(app, deps)
+  registerSalesOrderRoutes(app, deps)
+  registerLotRoutes(app, deps)
+  registerPrinterRoutes(app, deps)
 
   return app
 }
