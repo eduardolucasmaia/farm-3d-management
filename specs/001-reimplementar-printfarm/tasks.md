@@ -10,6 +10,8 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 **Revisado**: 2026-11-18, para a stack Node.js + TypeScript + SQLite (research.md item 1). Organização por história de usuário. Os caminhos de arquivo seguem plan.md "Project Structure".
 
+**Leitura**: quem vai implementar começa por `AGENTS.md` na raiz e pelo brief da história em `briefs/`; deste arquivo, leia só a seção da sua fase. Tarefas concluídas (`[X]`) aparecem resumidas em uma linha; o texto original está no histórico (`git log -p -- specs/001-reimplementar-printfarm/tasks.md`).
+
 **Tests**: Entram nas regras de domínio, na orquestração e no acesso por papel. O princípio II da constituição exige o teste vermelho antes da regra. Jornada de tela fica em `specs/001-reimplementar-printfarm/quickstart.md`. Na SPA, Vitest cobre só o guarda de rota.
 
 **Organization**: Uma fase por história, na ordem de prioridade da spec.md (US1-P1 → US8-P4). Tarefas marcadas [P] rodam em paralelo (arquivos diferentes, sem dependência). Dentro de cada fase, modelos antes de serviços, serviços antes de rotas.
@@ -20,6 +22,7 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 **Purpose**: Project initialization and basic structure
 
+<<<<<<< HEAD
 - [ ] T001 Remove arquivos C# e .NET deixados por implementação anterior (`Farm3d.sln`, `src/`, `docker-compose.yml`) em `package.json`
 - [ ] T002 [P] Criar `package.json` raiz com workspaces: `server` e `web`
 - [ ] T003 [P] Criar `server/package.json` com dependências: fastify, @fastify/jwt, @fastify/problem, node:sqlite, vitest, typescript
@@ -31,6 +34,14 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 - [ ] T009 Criar estrutura de pastas do servidor: `server/src/domain/`, `server/src/application/`, `server/src/infrastructure/`, `server/src/api/`, `server/migrations/`, `server/tests/`
 - [ ] T010 Criar estrutura de pastas do cliente: `web/src/pages/`, `web/src/router/`, `web/src/stores/`, `web/tests/`
 - [ ] T011 Criar `.env.example` com nomes de variáveis (sem segredos): `JWT_SIGNING_KEY`, `FARM3D_SEED_PASSWORD`, `DATABASE_PATH`, `TIME_ZONE`
+=======
+- [X] T001 Workspaces npm (raiz e `server/`), scripts e remoção dos restos .NET
+- [X] T002 [P] `server/tsconfig.json` e `server/vitest.config.ts`
+- [X] T003 [P] Script `typecheck` na SPA, `npm install` e `package-lock.json`
+- [X] T004 [P] `.env.example` sem segredo; `.gitignore` com `data/`, `*.db` e `__pycache__/`
+- [X] T005 [P] `.editorconfig` sem a seção `[*.cs]`
+- [X] T006 `server/src/infrastructure/config.ts`
+>>>>>>> 294e3bf (Newreports for smaller models)
 
 ---
 
@@ -40,6 +51,7 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
+<<<<<<< HEAD
 ### Database and Domain Foundation
 
 - [ ] T012 [P] Definir enums em `server/src/domain/enums.ts`: `UserRole`, `QuoteStatus`, `SalesOrderCommercialStatus`, `ProductionLotStatus`, `PrinterOperationalStatus`, `StockMovementKind`, `PrintRunStatus`, `FailReason`, `PaymentMethod`, `MaterialType` — copiar valores exatos de `data-model.md`
@@ -47,6 +59,19 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 - [ ] T014 [P] Criar classe `Result<T>` em `server/src/domain/result.ts` para domínio puro (fail/pass pattern)
 - [ ] T015 Criar `server/src/infrastructure/db/connection.ts`: conexão SQLite com `busy_timeout`, `PRAGMA foreign_keys = on` (research.md item 3)
 - [ ] T016 Criar framework de migrações em `server/src/infrastructure/db/migrations.ts`: executar SQL de `migrations/*.sql` em ordem
+=======
+- [X] T007 `server/tests/architecture/domain-purity.test.ts` e `server/src/domain/result.ts`
+- [X] T008 [P] `server/src/domain/enums.ts`
+- [X] T009 [P] `server/tests/domain/units.test.ts` e `server/src/domain/units.ts`
+- [X] T010 `server/tests/infrastructure/db.test.ts`, `db/database.ts`, `db/migrate.ts`, `db/migrate-cli.ts` e `0001-foundation.sql`
+- [X] T011 Política de senha e travamento de login (teste e regra), `auth/password.ts`, `users-repo.ts`, `identity-seed.ts`
+- [X] T012 `POST /api/auth/login` em `routes/auth.ts`, com `auth/jwt.ts`
+- [X] T013 `api/app.ts` (`requireRoles`, problem+json, CORS), `api/main.ts` e `tests/api/authz.test.ts`
+- [X] T014 `web/tests/route-guard.spec.ts`, router e store de sessão
+- [X] T015 `jobs/hourly-farm-job.ts`, agendamento em `main.ts` e `jobs/run-once.ts`
+
+- [X] T079 `web/src/pages/EntrarPage.vue`, `web/src/api.ts` e `web/src/style.css`
+>>>>>>> 294e3bf (Newreports for smaller models)
 
 ### Entity Definitions (Core Entities needed across stories)
 
@@ -113,6 +138,7 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 **Goal**: Identificar pessoas por e-mail e senha, e restringir cada ação a papéis: Admin, Vendas, Produção, Compras, Operador.
 
+<<<<<<< HEAD
 **Independent Test**: Login com credenciais corretas retorna token JWT. Usuário sem sessão recebe 401. Usuário com papel inadequado recebe 403 em rota protegida.
 
 ### Implementation for User Story 1
@@ -126,13 +152,40 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 - [ ] T068 [US1] Implementar rota de criar usuário em `server/src/api/routes/users/create.ts`: POST /api/users, 201, 400, 403
 - [ ] T069 [US1] Implementar uso-caso de listar usuários em `server/src/application/use-cases/users/listUsers.ts`: GET /api/users
 - [ ] T070 [US1] Implementar rota de listar usuários em `server/src/api/routes/users/list.ts`: GET /api/users, 200, 403
+=======
+**Independent Test**: Seção 1 de `specs/001-reimplementar-printfarm/quickstart.md`
+
+### Tests for User Story 1
+
+- [X] T016 [P] [US1] `server/tests/domain/lot-split.test.ts`
+- [X] T017 [P] [US1] `server/tests/domain/fifo-reservation.test.ts`
+- [X] T018 [P] [US1] `server/tests/domain/printer-compatibility.test.ts`
+- [X] T077 [US1] `server/tests/domain/sales-order-state.test.ts`
+- [X] T026 [US1] `server/tests/application/release-lots.test.ts`
+
+### Implementation for User Story 1
+
+- [X] T019 [P] [US1] `server/src/domain/entities/catalog.ts`
+- [X] T020 [P] [US1] `server/src/domain/entities/stock.ts`
+- [X] T021 [P] [US1] `server/src/domain/entities/sales.ts` e `production.ts`
+- [X] T022 [US1] `splitLots` em `rules/lot-split.ts`
+- [X] T023 [US1] `allocateFifo` em `rules/fifo-reservation.ts`
+- [X] T024 [US1] `checkPrinterCompatibility` em `rules/printer-compatibility.ts`
+- [X] T078 [US1] `transitionSalesOrder` em `rules/sales-order-state.ts` e `PATCH /api/sales-orders/{id}/status`
+- [X] T025 [US1] `0002-production-lots.sql` e os repositórios `catalog`, `stock`, `sales` e `production`
+- [X] T027 [US1] `use-cases/release-lots.ts`, com `planRelease` em `rules/release-plan.ts`
+- [X] T028 [US1] Transição Released → Queued em `rules/lot-state.ts` e `use-cases/enqueue-lot.ts`
+- [X] T029 [US1] Rotas em `routes/lots.ts`, `routes/sales-orders.ts` (leitura) e `routes/cadastros/printers.ts` (leitura)
+- [X] T030 [US1] `seed/demo-seed.ts`, com os dados fictícios da seção 1 do quickstart
+- [X] T031 [US1] `web/src/pages/PedidoPage.vue` e `FilaPage.vue`
+>>>>>>> 294e3bf (Newreports for smaller models)
 
 ### Ajustes da US1 pelas clarificações de 2026-11-17
 
-- [X] T080 [US1] Escrever primeiro, em `server/tests/application/release-lots.test.ts` e `server/tests/domain/lot-split.test.ts`, os casos novos e vê-los falhar: cada lote liberado grava `ReleasedPiecesPerPlate`, `ReleasedSecondsPerPlate` e `ReleasedMgPerPlate` copiados do perfil; a liberação termina com os lotes em Queued e um item de fila sem impressora por lote, na mesma transação; a recusa de saldo usa o código `INSUFFICIENT_MATERIAL`. Depois acrescentar as três colunas a `server/migrations/0002-production-lots.sql` (ainda não mesclada na base; depois de mesclada, usar migração nova), e ajustar `release-plan.ts`, `release-lots.ts`, `production-repo.ts` e `routes/lots.ts`. Regra: "Alterações do perfil valem só para novas liberações."
-- [X] T081 [US1] Escrever primeiro em `server/tests/api/us1-flow.test.ts` que `POST /api/lots/{id}/queue` responde 200 ao atribuir ou trocar a impressora de um lote já Queued, atualizando o mesmo item de fila, e 201 para lote Released sem item; nunca duplica o item. Depois ajustar `enqueue-lot.ts`, `production-repo.ts` e a rota, com as mesmas validações de `checkPrinterCompatibility`
-- [X] T082 [US1] Escrever primeiro em `server/tests/api/us1-flow.test.ts` que `GET /api/lots` devolve `reservedGrams`, `missingMaterialG` = max(0, plannedGrams − reservedGrams) e os três campos `released*`. Depois ajustar `production-repo.ts` e `routes/lots.ts`, e mostrar o material faltante em `web/src/pages/FilaPage.vue`
-- [X] T083 [US1] Escrever em `server/tests/application/release-lots.test.ts` o caso da seção 1, passos 7 e 8, do quickstart: depois de liberar, alterar o perfil direto no banco; os lotes liberados mantêm parâmetros, gramas, minutos e reservas; uma nova liberação usa o perfil novo
+- [X] T080 [US1] Parâmetros da prancha preservados no lote; a liberação já enfileira sem impressora; código `INSUFFICIENT_MATERIAL`
+- [X] T081 [US1] `POST /api/lots/{id}/queue`: 201 cria o item, 200 atualiza o mesmo item (`queueAction`)
+- [X] T082 [US1] `GET /api/lots` com `reservedGrams`, `missingMaterialG` e os campos `released*`
+- [X] T083 [US1] Teste: editar o perfil não muda lotes liberados; liberação nova usa o perfil novo
 
 **Checkpoint**: Seção 1 do quickstart passa. Parar aqui já é um MVP demonstrável
 
@@ -371,6 +424,7 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ---
 
+<<<<<<< HEAD
 ## Parallel Example: User Story 5
 
 ```bash
@@ -400,6 +454,10 @@ Task: "Use-cases de printer (T117)"
 5. **STOP and VALIDATE**: Login + cadastro funcional e testável independentemente
 6. Deploy/demo if ready
 
+=======
+## Implementation Strategy
+
+>>>>>>> 294e3bf (Newreports for smaller models)
 ### Incremental Delivery
 
 1. Complete Setup + Foundational → Foundation ready
@@ -466,6 +524,7 @@ O MVP é **US1 + US2** (autenticação + cadastros), que corresponde a **66 tare
 
 ## Notes
 
+<<<<<<< HEAD
 - [P] tasks = different files, no dependencies
 - Story label maps task to specific user story for traceability
 - Each user story should be independently completable and testable
@@ -476,3 +535,13 @@ O MVP é **US1 + US2** (autenticação + cadastros), que corresponde a **66 tare
 - **Identifiers never change**: FR-nnn, SC-nnn, Tnnn, story numbers, and principle numbers MUST NOT be renumbered or reused (Constitution rule 4)
 - **Names come from source**: entity names, field names, enum values, routes and roles MUST be copied from `data-model.md` and `contracts/` (Constitution rule 5)
 - **Don't guess**: missing rules, numbers, limits or behaviors MUST become `[NEEDS CLARIFICATION: question]` in the owning artifact (Constitution rule 6)
+=======
+- [P] = outro arquivo, sem dependência incompleta
+- Um teste que importa uma regra inexistente falha na importação. Criar a regra exportando a função que devolve `fail('NOT_IMPLEMENTED', …)` conta como vermelho
+- A história no rótulo amarra a tarefa à spec
+- T080–T083 corrigem a US1 já implementada; T084–T085 formam a fase 8.5; T086, T087 e T088 entram na US5. A lista em C# publicada em 2026-11-17 tinha outra numeração; não usar aqueles IDs.
+- Os IDs não seguem a ordem do arquivo em três pontos: T077 e T026 aparecem entre os testes da US1, T055 entre os testes da US5 e T076 antes de T075. A ordem de execução é a ordem do arquivo
+- Não copiar código de `docs_apoio/software_ref`; aquele diretório é leitura
+- Não criar módulo de assistente, cliente fiscal, SDK de impressora, ORM nem biblioteca de fila
+- Commit ao fim de cada checkpoint, com `npm test` e `npm run typecheck` verdes
+>>>>>>> 294e3bf (Newreports for smaller models)

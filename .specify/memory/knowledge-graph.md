@@ -1,16 +1,20 @@
 # Knowledge Graph: Farm 3D
 
 **Gerado em**: 2026-11-17 | **Revisado**: 2026-11-17 (Fundação e US1 implementadas)
-**Fontes**: constituição 2.0.1, os artefatos de `specs/001-reimplementar-printfarm/` e o código em `server/` e `web/`
+**Fontes**: constituição 2.1.0, os artefatos de `specs/001-reimplementar-printfarm/` e o código em `server/` e `web/`
 **Feature ativa**: `specs/001-reimplementar-printfarm` (de `.specify/feature.json`)
 **Stack**: Node.js 24+, TypeScript 5.9 sem build, Fastify 5, `node:sqlite`, Vue 3, Vitest 4.1.12+ (plan.md e research.md)
-**Progresso**: 38 de 88 tarefas concluídas (Setup, Fundação, US1, T079–T083). Desenho integrado com a revisão paralela em 2026-11-17 (research.md itens 17–20; T084–T088 pendentes)
+**Progresso**: 38 de 88 tarefas concluídas (Setup, Fundação, US1, T079–T083). Desenho integrado com a revisão paralela em 2026-11-17 (research.md itens 17–20). Pendentes: 50 tarefas, uma por brief em `briefs/`
 
 ## Como usar
 
 Este arquivo é um índice de relações. Ele diz onde cada fato mora e o
 que depende do quê. Ele não contém regra.
 
+- **Vai implementar uma história? Não comece por aqui.** Leia
+  `AGENTS.md` na raiz e o brief da história em
+  `specs/001-reimplementar-printfarm/briefs/`. Este grafo é para quem
+  muda desenho ou precisa achar algo que o brief não responde.
 - Em conflito com a fonte, vale a fonte. Corrija este arquivo.
 - Leia a seção 1 para saber qual arquivo abrir. Leia a seção 5 antes
   de tocar em código. Leia a seção 6 antes de trabalhar em paralelo.
@@ -27,6 +31,9 @@ que depende do quê. Ele não contém regra.
 |----|---------|-------------|-------------|
 | CONST | `.specify/memory/constitution.md` | Princípios, vocabulário, fora de escopo, processo | `/speckit.constitution`, com emenda ratificada por humano |
 | KG | `.specify/memory/knowledge-graph.md` | Relações entre artefatos e estado da implementação | quem mudar uma fonte |
+| GUIA | `AGENTS.md` (e `CLAUDE.md`, que só o importa) | Ponto de entrada do agente: pré-voo, o que ler, ciclo da tarefa, regras resumidas, exemplos a copiar, estado das histórias | quem fechar uma história ou mudar uma regra de trabalho |
+| BRIEF | `specs/001-…/briefs/<história>.md` | Por história: tarefas em ordem, bloqueios, seções a ler, arquivos novos e compartilhados, armadilhas | quem mudar desenho que a história cita |
+| CMD | `.opencode/commands/farm.historia.md` | Comando `/farm.historia <brief>`: conduz o ciclo de uma história | humano |
 | FEAT | `.specify/feature.json` | Feature ativa | `/speckit.specify` |
 | INTEG | `.specify/integration.json`, `.specify/integrations/`, `.opencode/commands/` | Integração `opencode` e seus comandos | CLI `specify integration` |
 | SPEC | `specs/001-…/spec.md` | US1–US8, FR-001–FR-026, SC-001–SC-009, edge cases | `/speckit.specify`, `/speckit.clarify` |
@@ -56,6 +63,9 @@ que depende do quê. Ele não contém regra.
 | QS | prova | SPEC (uma seção por US) |
 | PLAN | confere gates de | CONST |
 | BIZCHK | revisa | SPEC |
+| GUIA | aponta para | BRIEF, QS, CODE (exemplos) |
+| BRIEF | aponta seções de | TASKS, DM, CTR, QS, RES |
+| CMD | executa | GUIA + BRIEF |
 | FEAT | aponta para | `specs/001-reimplementar-printfarm` |
 
 ## 2. Princípios, gates e evidência
@@ -281,21 +291,21 @@ A CLI `specify` e a instalação dos comandos estão descritas na seção
 
 | Branch | Base | Conteúdo | Remoto |
 |--------|------|----------|--------|
-| `001-reimplementar-printfarm` | `main` | artefatos de desenho (constituição 2.0.0, stack Node.js, segurança confirmada) | 4 commits à frente de `origin` |
-| `pedro/001-fundacao` | `001-reimplementar-printfarm` | T001–T015, T079 | não enviada |
-| `pedro/001-us1-lotes-fila` | `pedro/001-fundacao` | contratos de leitura da US1; T016–T031, T077, T078; `allowScripts` do esbuild; Vitest 4 e `npm audit` limpo; constituição 2.0.1 e este grafo | não enviada |
-| `rascunho/csharp-anterior` | `001-reimplementar-printfarm` | tentativa anterior em C#, só referência | não enviada |
+| `001-reimplementar-printfarm` | `main` | desenho integrado: stack Node.js, clarificações de 2026-11-17, `analysis.md` | publicada |
+| `pedro/001-fundacao` | `001-reimplementar-printfarm` | T001–T015, T079 | publicada; aguardando PR |
+| `pedro/001-us1-lotes-fila` | `pedro/001-fundacao` | T016–T031, T077, T078, T080–T083; Vitest 4 e `npm audit` limpo; constituição 2.0.1 | publicada; aguardando PR |
+| `pedro/001-guia-agentes` | `pedro/001-us1-lotes-fila` | `AGENTS.md`, briefs, comando `/farm.historia`, `tasks.md` resumido, constituição 2.1.0 | local |
+| `rascunho/csharp-anterior` | `001-reimplementar-printfarm` | tentativa anterior em C#, só referência | local |
 
-Ordem de mescla: `pedro/001-fundacao` → base; depois
-`pedro/001-us1-lotes-fila` → base. As próximas histórias partem da
-base com as duas mescladas.
+Ordem de mescla: `pedro/001-fundacao` → base; `pedro/001-us1-lotes-fila`
+→ base; `pedro/001-guia-agentes` → base. As próximas histórias partem
+da base com as três mescladas.
 
-Como rodar: QS, "Pré-requisitos" (`npm install`, `.env`,
-`npm run dev --workspace server` e `npm run dev --workspace web`;
-usuários semeados com a senha de `FARM3D_SEED_PASSWORD`).
+Como rodar e como verificar: `AGENTS.md`, seções 1 e 7.
 
-Verificação a cada checkpoint: `npm test`, `npm run typecheck` e
-`npm audit` sem achado alto ou crítico.
+Decisões de equipe em aberto (`plan.md`, "Achados de analysis.md"): C1,
+I1 (bloqueia T041), U1 (bloqueia T064) e A2 (parte de T052).
 
-Próximo passo da feature 001: mesclar Fundação e US1; depois US5
-(T052–T058), ou US2, US3, US4 e US6 em paralelo.
+Próximo passo da feature 001: mesclar as três branches; decidir os
+achados; depois US5, ou US2, US4 e US6 em paralelo, cada uma com
+`/farm.historia <brief>`.
