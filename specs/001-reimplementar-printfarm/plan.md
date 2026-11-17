@@ -32,18 +32,26 @@ Reimplementar o núcleo do PrintFarm (cadastro, orçamento, pedido, lote de prod
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-| Princípio | Antes da pesquisa | Depois do desenho |
-|-----------|-------------------|-------------------|
-| I. A constituição manda | Passa. Stack não está na constituição; entra neste plan. | Passa. research.md registra a escolha e o que foi descartado. |
-| II. Domínio puro, casca fina | Passa. O plan separa Domain de Api, Infrastructure e web. | Passa. data-model.md e os contratos não colocam regra em controller. |
-| III. Teste antes da regra | Passa. Regras de prancha, FIFO, estado, custo e compatibilidade nascem como teste vermelho. | Passa. tasks.md ordena o teste antes da função. quickstart.md cobre a jornada. |
-| IV. Dois estados | Passa. A spec separa lote e impressora. | Passa. data-model.md tem as duas máquinas de transição. Concluir impressão não leva a Disponível. |
-| V. Rastreio sem baixa duplicada | Passa. FR-012, FR-017 e FR-024. | Passa. Reserva vazia quando falta saldo. Segunda conclusão recusada. AuditLog e StockMovement no modelo. |
-| VI. Estimativa explícita | Passa. FR-023. | Passa. CostEstimate sem total se falta premissa. Frase da taxa no resultado. |
-| VII. Escopo parado | Passa. FR-026. | Passa. research.md item 14 não cria assistente, fiscal nem telemetria. |
-| VIII. Dado fictício marcado | Passa. FR-025. | Passa. FarmSettings.ExamplesAreFictional permanece verdadeiro. |
+Conferido contra a constituição 2.0.0 em 2026-11-17. Cada linha é um gate da seção "Gates verificáveis" e aponta a evidência.
 
-Nenhuma violação. A tabela de Complexity Tracking justifica só o número de projetos, que o princípio II exige.
+| Princípio | Gate | Antes da pesquisa | Depois do desenho (evidência) |
+|-----------|------|-------------------|-------------------------------|
+| I. Domínio puro, casca fina | Núcleo sem persistência, HTTP e UI | A estrutura separa `Farm3d.Domain` dos demais projetos | T007 `DomainPurityTests.cs`; T001 proíbe pacote de EF, HTTP ou UI no Domain |
+| I | Nenhuma decisão fora do núcleo | research.md item 2 | `ReleaseLots` chama `LotSplit` e `FifoReservation` (T026); `EnqueueLot` chama `PrinterCompatibility` (T028); `QuoteLifecycle` chama `QuoteState` (T041); `RunExecution` usa `PrinterState` e `LotState` (T054, T055) |
+| II. Teste antes da regra | Teste da regra precede a regra | research.md item 13 | T016–T018 antes de T022–T024; T032 antes de T033; T039 antes de T040; T046 antes de T047; T052–T053 antes de T054; T059 antes de T060; T063–T064 antes de T065 |
+| II | Orquestração com teste próprio | Testes com EF InMemory em `Farm3d.Tests/Stock` | T027, T056 e T069. Observação: T027 e T056 vêm depois do caso de uso; a regra pura que eles orquestram já tem teste anterior |
+| II | Roteiro por história | quickstart.md previsto | Seções 1 a 8 de quickstart.md, uma por história |
+| III. Dois estados | Nenhum estado derivado do outro | FR-014 | Duas tabelas de transição em data-model.md; T052 e T053; quickstart seção 5 passos 3 a 5 |
+| IV. Rastreio sem baixa duplicada | Saldo atômico e não repetível | FR-012 e FR-017 | T017 e T027 (saldo insuficiente, zero reservas; repetição recusada); T056 (saída única) |
+| IV | Trilha em toda mudança de estado | FR-024 | T069, T070; `AuditLog` e `StockMovement` em data-model.md |
+| V. Estimativa explícita, dado fictício marcado | Sem total sem premissa, sem número inventado | FR-023, FR-005 | T063 (`total` nulo e `missingPremises`); T032 (limite de manutenção obrigatório, sem padrão) |
+| V | Exemplo marcado | FR-025 | `FarmSettings.ExamplesAreFictional` (T009); quickstart seção 7 passo 5 |
+| VI. Escopo parado | Nada da lista "Fora" criado | FR-026 | research.md item 14; notas de tasks.md |
+| VI | Sem estrutura sem requisito | — | Complexity Tracking abaixo |
+| VII. Acesso por papel, segredo fora do repositório | Papéis por rota, recusa no servidor | FR-001, FR-002 | Matriz de papéis em contracts/auth.md, cadastros.md e producao.md; 401 e 403 em contracts/cadastros.md; quickstart seções 2 e 8. Observação: a recusa 403 não tem teste automatizado, só o roteiro |
+| VII | Nenhum segredo versionado | Constraints acima | T004 e T006 (`.env.example` só com nomes; `.env` ignorado); T011 (senha de semente só por variável, só em Development) |
+
+Nenhuma violação. Duas observações ficam registradas na tabela (ordem de T027 e T056; 403 sem teste automatizado). A tabela de Complexity Tracking justifica só o número de projetos, que o princípio I exige.
 
 ## Project Structure
 
@@ -99,4 +107,4 @@ docker-compose.yml
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| Cinco projetos .NET mais a SPA | O princípio II separa regra, caso de uso, persistência, HTTP e tela | Um projeto único colocaria EF e HTTP no mesmo assembly da regra, e o teste deixaria de ser puro |
+| Cinco projetos .NET mais a SPA | O princípio I separa regra, caso de uso, persistência, HTTP e tela | Um projeto único colocaria EF e HTTP no mesmo assembly da regra, e o teste deixaria de ser puro |

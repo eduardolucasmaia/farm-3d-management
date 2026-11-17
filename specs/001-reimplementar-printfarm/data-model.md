@@ -102,13 +102,13 @@ Um pedido está produzido somente quando todos os seus lotes estão Completed.
 | Available | iniciar execução | Printing |
 | Printing | concluir impressão ou falhar execução | AwaitingPickup |
 | AwaitingPickup | confirmar retirada | Preparing |
-
-Pausa do lote não muda o estado da impressora: ela permanece Em impressão. Confirmar a retirada depois de uma execução concluída marca o lote como Concluído. Confirmar a retirada depois de uma falha não muda o lote, que já está em Falha.
 | Preparing | concluir preparação e horas acumuladas < limite e não bloqueada | Available |
 | Preparing | concluir preparação e horas acumuladas ≥ limite | InMaintenance |
 | InMaintenance | confirmar manutenção com nota | Available, se não estiver marcada indisponível |
 | qualquer exceto InMaintenance | admin marca indisponível | Unavailable |
 | Unavailable | admin reativa, sem manutenção vencida e sem execução aberta | Available |
+
+Pausa do lote não muda o estado da impressora: ela permanece Em impressão. Confirmar a retirada depois de uma execução concluída marca o lote como Concluído. Confirmar a retirada depois de uma falha não muda o lote, que já está em Falha.
 
 "Concluir a impressão deixa o lote aguardando retirada e a impressora aguardando retirada." "A impressora só volta a disponível depois da retirada e da preparação, e somente se as horas acumuladas estiverem abaixo do limite."
 

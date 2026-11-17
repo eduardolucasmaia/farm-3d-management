@@ -14,7 +14,7 @@ Cada item fecha uma escolha técnica. A spec não cita stack. Aqui a escolha fic
 ## 2. Onde vive cada regra
 
 - **Decision**: Funções puras em `src/Farm3d.Domain` para corte de prancha, compatibilidade, custo, máquinas de estado do lote e da impressora, e ordenação FIFO sobre uma lista já carregada. `Farm3d.Application` orquestra o caso de uso e a transação. `Farm3d.Infrastructure` persiste. `Farm3d.Api` e `web/` só traduzem.
-- **Rationale**: Princípio II da constituição. O teste vermelho da regra não sobe banco nem navegador.
+- **Rationale**: Princípio I da constituição. O teste vermelho da regra não sobe banco nem navegador.
 - **Alternatives considered**: Regra dentro do controller, como partes do legado fazem ao falar com o EF direto. Foi descartado porque o teste deixaria de ser só da regra.
 
 ## 3. Persistência e ambiente local
@@ -33,7 +33,7 @@ Cada item fecha uma escolha técnica. A spec não cita stack. Aqui a escolha fic
 
 - **Decision**: Um `BackgroundService` na API, intervalo de uma hora, que expira orçamentos elegíveis e grava sugestões de recompra e a contagem de prazos. Sem Hangfire.
 - **Rationale**: A spec pede o efeito (expirar, sugerir, contar), não um painel de jobs. Hangfire traz armazenamento e painel que a constituição chama de complexidade além da regra. Um serviço hospedado cobre o intervalo horário descrito no módulo comercial do referência.
-- **Alternatives considered**: Hangfire, igual ao legado. Descartado pelo princípio de não acrescentar estrutura que a regra não exige. Disparo só manual foi descartado porque orçamento vencido ficaria aprovado até alguém lembrar.
+- **Alternatives considered**: Hangfire, igual ao legado. Descartado pelo princípio VI: não acrescentar estrutura que a regra não exige. Disparo só manual foi descartado porque orçamento vencido ficaria aprovado até alguém lembrar.
 
 ## 6. Corte da prancha e prancha parcial
 
@@ -50,7 +50,7 @@ Cada item fecha uma escolha técnica. A spec não cita stack. Aqui a escolha fic
 ## 8. Estados da impressora
 
 - **Decision**: Campo operacional novo, além de ativa/inativa. Transições só pelos eventos da spec (iniciar, concluir impressão, confirmar retirada, concluir preparação, entrar em manutenção, confirmar manutenção, marcar indisponível). O legado só tinha `IsActive` e "impressoras rodando" no painel. O estado operacional é exigência da constituição, não cópia do legado.
-- **Rationale**: Princípio IV. Sem esse campo, "impressão concluída" vira "máquina livre".
+- **Rationale**: Princípio III. Sem esse campo, "impressão concluída" vira "máquina livre".
 - **Alternatives considered**: Derivar o estado da execução aberta. Descartado porque a spec proíbe inferir um estado do outro. A retirada e a preparação não são uma execução.
 
 ## 9. Motivos de falha
@@ -62,7 +62,7 @@ Cada item fecha uma escolha técnica. A spec não cita stack. Aqui a escolha fic
 ## 10. Custo e calendário
 
 - **Decision**: `CostEstimate.Compute` recebe gramas, preço por grama, horas, kWh por hora, tarifa e taxa de hora-máquina. Qualquer premissa nula devolve lacuna, sem total. A taxa não inclui filamento nem energia; o tipo do resultado carrega essa frase. Previsão de término: horas pendentes dos lotes compatíveis com cada máquina disponível no calendário, em paralelo. Se todas as máquinas consideradas têm a mesma taxa de peças por hora no perfil em uso, o painel pode mostrar a aproximação "horas ÷ máquinas equivalentes" e MUST exibir essa frase. Calendário padrão segunda–sexta 08:00–18:00, gravado nos parâmetros da farm.
-- **Rationale**: FR-023 e princípio VI.
+- **Rationale**: FR-023 e princípio V.
 - **Alternatives considered**: Total sempre numérico com tarifa zero. A spec proíbe número sem premissa.
 
 ## 11. Dinheiro e gramas
@@ -80,11 +80,11 @@ Cada item fecha uma escolha técnica. A spec não cita stack. Aqui a escolha fic
 ## 13. Testes que a constituição exige
 
 - **Decision**: Cada regra dos itens 6 a 10 nasce como teste xUnit vermelho em `src/Farm3d.Tests/Domain`. A orquestração de reserva com persistência nasce como teste em `src/Farm3d.Tests/Stock` com EF InMemory. Vitest cobre só o guarda de rota: usuário sem papel não abre a tela. O restante da jornada está em `quickstart.md`.
-- **Rationale**: Princípio III. A spec não pede suíte de ponta a ponta de HTTP.
+- **Rationale**: Princípio II. A spec não pede suíte de ponta a ponta de HTTP.
 - **Alternatives considered**: Só teste manual. Viola a constituição. `WebApplicationFactory` para todo endpoint. Fica fora desta feature; o referência também não tinha.
 
 ## 14. O que não entra no desenho
 
 - **Decision**: Sem projeto de assistente, sem cliente de nota fiscal, sem SDK de impressora, sem fila automática.
-- **Rationale**: FR-026 e a seção Escopo da constituição.
+- **Rationale**: FR-026 e a seção "Fora de escopo" da constituição.
 - **Alternatives considered**: Deixar o endpoint de chat desligado. Mesmo desligado, o módulo seria estrutura sem regra. Não criar.
