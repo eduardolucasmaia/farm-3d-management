@@ -168,6 +168,7 @@ Cada mudança de estado de orçamento, pedido, lote de produção e impressora f
 - Cor ou tamanho é obrigatório só quando o modelo oferece essa opção. A escolha fica gravada na linha.
 - Impressora inativa ou indisponível não entra na fila.
 - Dois lotes não ocupam a mesma impressora ao mesmo tempo.
+- Impressora recém-cadastrada e ativa entra na capacidade, no backlog e na previsão junto com as demais, sem tratamento à parte.
 - Orçamento sem validade não expira pelo processamento periódico.
 - Recebimento com peso zero ou negativo é recusado.
 - Conclusão de execução sem material real informado é recusada; o estimado não é lançado no lugar do real em silêncio.
@@ -256,7 +257,7 @@ Cada mudança de estado de orçamento, pedido, lote de produção e impressora f
 
 ## Assumptions
 
-- O produto reimplementado é o núcleo descrito no software de referência (cadastros, comercial, produção, estoque, compras, financeiro simplificado e painel), mais as regras da constituição: prancha, dois estados, custo explícito e dado fictício.
+- O produto reimplementado é o núcleo descrito no software de referência (cadastros, comercial, produção, estoque, compras, financeiro simplificado e painel), mais a regra de prancha desta spec e os princípios da constituição: dois estados, custo explícito e dado fictício.
 - Kanban é interno. Não há quadro externo como fonte dos estados.
 - Início e fim de impressão são confirmados por pessoa. Não há leitura da máquina.
 - Tempo e material nascem do perfil de produção digitado. Não há importação de fatiador nesta entrega.
