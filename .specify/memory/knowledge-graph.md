@@ -71,8 +71,6 @@ Lacunas conhecidas:
 - Código C# não versionado e restos .NET versionados (`docker-compose.yml`,
   `src/Directory.Build.props`, `src/Farm3d.Api/appsettings.json`)
   continuam na árvore até T001.
-- Os números de política de senha, travamento e validade do token (RES
-  item 4) são padrão e aguardam confirmação do mantenedor.
 - A seção "Processo Spec Kit" da constituição ainda descreve o estado
   anterior à instalação da CLI 1.4.1 e da integração OpenCode.
 

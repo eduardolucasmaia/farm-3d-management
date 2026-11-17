@@ -35,7 +35,7 @@ Cada item fecha uma escolha técnica. A spec não cita stack. Aqui a escolha fic
 - **Semente**: um usuário por papel, criada só quando `NODE_ENV=development`, com a senha de `FARM3D_SEED_PASSWORD`. Sem essa variável a semente não roda.
 - **Rationale**: A spec pede identificação e os cinco papéis. O referência usa bearer. Hash e travamento como código explícito deixam os números visíveis e testáveis.
 - **Alternatives considered**: Sessão por cookie, descartada porque a SPA e a API sobem separados no desenvolvimento. `bcrypt` ou `argon2`, descartados porque exigem pacote nativo e o `scrypt` embutido atende. Biblioteca de autenticação completa (Passport, Auth.js), descartada como estrutura além da regra.
-- **Pendente de confirmação**: os números de política e travamento acima são a escolha padrão; o mantenedor pode trocá-los neste item antes da tarefa T011.
+- **Confirmado pelo mantenedor em 2026-11-17**: política de senha (6 caracteres e quatro classes), travamento (5 falhas, 5 minutos) e validade do token (8 horas). Mudar qualquer um desses números exige alterar este item antes do código.
 
 ## 5. Processamento periódico
 
