@@ -4,7 +4,7 @@
 **Fontes**: constituição 2.1.0, os artefatos de `specs/001-reimplementar-printfarm/` e o código em `server/` e `web/`
 **Feature ativa**: `specs/001-reimplementar-printfarm` (de `.specify/feature.json`)
 **Stack**: Node.js 24+, TypeScript 5.9 sem build, Fastify 5, `node:sqlite`, Vue 3, Vitest 4.1.12+ (plan.md e research.md)
-**Progresso**: 38 de 88 tarefas concluídas (Setup, Fundação, US1, T079–T083). Desenho integrado com a revisão paralela em 2026-11-17 (research.md itens 17–20). Pendentes: 50 tarefas, uma por brief em `briefs/`
+**Progresso**: 39 de 89 tarefas concluídas (Setup, Fundação, US1, T079–T083, T089: fábrica simulada). Desenho integrado com a revisão paralela em 2026-11-17 (research.md itens 17–20). Pendentes: 50 tarefas, uma por brief em `briefs/`
 
 ## Como usar
 

@@ -36,7 +36,7 @@ Não leia inteiros, a menos que o brief mande: `spec.md`, `research.md`,
 
 | História | Brief | Tarefas | Estado |
 |----------|-------|---------|--------|
-| Setup, Fundação, US1 | — | T001–T031, T077–T083 | pronto |
+| Setup, Fundação, US1 | — | T001–T031, T077–T083, T089 | pronto |
 | US2 Cadastros | `briefs/us2.md` | T032–T038 | pendente |
 | US3 Orçamento | `briefs/us3.md` | T039–T045 | pendente |
 | US4 Compras | `briefs/us4.md` | T046–T051 | pendente |
@@ -130,6 +130,7 @@ npm audit                             # sem achado alto ou crítico
 npm run dev --workspace server        # API em http://127.0.0.1:5088
 npm run dev --workspace web           # tela em http://localhost:5173
 npm run job:hourly --workspace server # uma passagem do job periódico
+npm run seed:factory --workspace server # fábrica simulada (fictícia), opcional
 Remove-Item data\farm3d.db*           # recomeçar o banco
 ```
 
