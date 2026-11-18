@@ -124,16 +124,16 @@ Valem para toda tarefa abaixo, além das "Regras para agentes" da constituição
 
 ### Tests for User Story 2
 
-- [ ] T032 [P] [US2] Escrever `server/tests/domain/master-data-rules.test.ts` falhando quando o limite de manutenção é zero ou ausente, quando peças por prancha são menores que 1, quando segundos ou miligramas por prancha não são maiores que zero e quando `hex` não é vazio nem `#RRGGBB`. Regras: "Limite de horas de manutenção maior que zero." e "Peças por prancha, minutos por prancha e gramas por prancha, todos maiores que zero."
+- [ ] T032 [P] [US2] [FR-003] Escrever `server/tests/domain/master-data-rules.test.ts` falhando quando o limite de manutenção é zero ou ausente, quando peças por prancha são menores que 1, quando segundos ou miligramas por prancha não são maiores que zero e quando `hex` não é vazio nem `#RRGGBB`. Regras: "Limite de horas de manutenção maior que zero." e "Peças por prancha, minutos por prancha e gramas por prancha, todos maiores que zero."
 
 ### Implementation for User Story 2
 
-- [ ] T033 [US2] Implementar `server/src/domain/rules/master-data-rules.ts` até `master-data-rules.test.ts` passar. `hourRateExcludesFilamentAndEnergy` é sempre `true`. Frase fixa: "A taxa de hora-máquina não inclui filamento nem energia."
-- [ ] T034 [P] [US2] Criar os tipos `Operator`, `File3D` e `File3DVersion` em `server/src/domain/entities/masters.ts`, a migração `server/migrations/0003-masters.sql` e `server/src/infrastructure/repositories/masters-repo.ts`
-- [ ] T035 [US2] Implementar as rotas de `contracts/cadastros.md`, um arquivo por recurso em `server/src/api/routes/cadastros/` (`customers.ts`, `suppliers.ts`, `colors.ts`, `materials.ts`, `files3d.ts`, `print-profiles.ts`, `products.ts`, `printers.ts`, `operators.ts`), com a matriz de papéis do contrato, validação por `master-data-rules` e conversão de unidades por `parseScaled` e `formatScaled`
-- [ ] T036 [US2] Implementar `POST /api/users` e `GET /api/users` em `server/src/api/routes/users.ts` conforme `contracts/auth.md`, usando `password-policy`. Produção não cria usuário
-- [ ] T037 [US2] Em `server/src/api/routes/cadastros/files3d.ts` e `server/src/infrastructure/files/file-store.ts`, guardar o binário da versão sob `FARM3D_FILES_DIR` com `@fastify/multipart` e só o caminho relativo em `File3DVersion.StoragePath`. Recusar caminho que saia do diretório
-- [ ] T038 [US2] Criar as páginas em `web/src/pages/cadastros/` para cliente, modelo, impressora e operador, escondendo a ação quando o papel da sessão não é o da escrita
+- [ ] T033 [US2] [FR-003] Implementar `server/src/domain/rules/master-data-rules.ts` até `master-data-rules.test.ts` passar. `hourRateExcludesFilamentAndEnergy` é sempre `true`. Frase fixa: "A taxa de hora-máquina não inclui filamento nem energia."
+- [ ] T034 [P] [US2] [FR-003] Criar os tipos `Operator`, `File3D` e `File3DVersion` em `server/src/domain/entities/masters.ts`, a migração `server/migrations/0003-masters.sql` e `server/src/infrastructure/repositories/masters-repo.ts`
+- [ ] T035 [US2] [FR-003] Implementar as rotas de `contracts/cadastros.md`, um arquivo por recurso em `server/src/api/routes/cadastros/` (`customers.ts`, `suppliers.ts`, `colors.ts`, `materials.ts`, `files3d.ts`, `print-profiles.ts`, `products.ts`, `printers.ts`, `operators.ts`), com a matriz de papéis do contrato, validação por `master-data-rules` e conversão de unidades por `parseScaled` e `formatScaled`
+- [ ] T036 [US2] [FR-003] Implementar `POST /api/users` e `GET /api/users` em `server/src/api/routes/users.ts` conforme `contracts/auth.md`, usando `password-policy`. Produção não cria usuário
+- [ ] T037 [US2] [FR-003] Em `server/src/api/routes/cadastros/files3d.ts` e `server/src/infrastructure/files/file-store.ts`, guardar o binário da versão sob `FARM3D_FILES_DIR` com `@fastify/multipart` e só o caminho relativo em `File3DVersion.StoragePath`. Recusar caminho que saia do diretório
+- [ ] T038 [US2] [FR-003] Criar as páginas em `web/src/pages/cadastros/` para cliente, modelo, impressora e operador, escondendo a ação quando o papel da sessão não é o da escrita
 
 **Checkpoint**: Seção 2 do quickstart passa sem usar só a semente
 

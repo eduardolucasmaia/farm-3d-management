@@ -51,6 +51,7 @@ Conferido contra a constituição 2.0.0 em 2026-11-17, depois da troca de stack.
 | V. Estimativa explícita, dado fictício marcado | Sem total sem premissa, sem número inventado | FR-023, FR-005 | T063 (`total` nulo e `missingPremises`; parcelas arredondadas uma vez); T032 (limite de manutenção obrigatório, sem padrão) |
 | V | Exemplo marcado | FR-025 | `farm_settings.examples_are_fictional` com `CHECK (= 1)` (T010); quickstart seção 7 passo 5 |
 | VI. Escopo parado | Nada da lista "Fora" criado | FR-026 | research.md item 16; T076 |
+| VI | Sem estrutura sem requisito | FR-003 | T033 (`MasterDataRules`); T034 (Masters) e T035 (rotas de cadastro) em `server/src/api/routes/cadastros/`; Key Entities em spec.md |
 | VI | Sem estrutura sem requisito | — | Sem ORM, fila, cron, compilação nem Docker; Complexity Tracking vazio |
 | VII. Acesso por papel, segredo fora do repositório | Papéis por rota, recusa no servidor | FR-001, FR-002 | Matriz de papéis em contracts/; `requireRoles` por rota (T013); T013 `authz.test.ts` cobre 401 e 403; quickstart seções 2 e 8 |
 | VII | Nenhum segredo versionado | Constraints acima | T004 (`.env.example` sem valor de segredo; `.env` e `data/` ignorados); T006 recusa subir sem `JWT_SIGNING_KEY`; T011 (senha de semente só por variável, só em development) |
@@ -67,7 +68,7 @@ Nenhuma violação. As duas observações da revisão anterior foram resolvidas:
 | G1 | MEDIUM | Parcial. Product já tem material padrão; falta o vínculo com o arquivo 3D | Acrescentar `File3DId` a Product em T034 (migração 0003) |
 | I2 | MEDIUM | Não se aplica: referia-se à numeração da lista em C# | — |
 | A1 | MEDIUM | Resolvido: valores inteiros em mg, prancha parcial arredondada para cima (research.md itens 6 e 11) | — |
-| A2 | MEDIUM | Aberto: `[NEEDS CLARIFICATION]` em data-model.md sobre horas de execução que falha | Responder antes de T052 |
+| A2 | MEDIUM | Resolvido: "Sim, execução que falha também soma o tempo real de impressão às horas acumuladas. AccumulatedSeconds é uma métrica da impressora, independente do estado do lote de produção." (contexto: FR-017 "uma única saída de estoque"; estado Preparing → InMaintenance verifica AccumulatedSeconds ≥ MaintenanceLimitHours × 3600) | — |
 
 ## Project Structure
 
