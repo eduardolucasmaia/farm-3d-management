@@ -12,7 +12,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "db:migrate": "node --env-file-if-exists=../.env src/infrastructure/db/migrate-cli.ts",
-    "job:hourly": "node --env-file-if-exists=../.env src/infrastructure/jobs/run-once.ts"
+    "job:hourly": "node --env-file-if-exists=../.env src/infrastructure/jobs/run-once.ts",
+    "seed:factory": "node --env-file-if-exists=../.env src/infrastructure/seed/factory-cli.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.4.3",

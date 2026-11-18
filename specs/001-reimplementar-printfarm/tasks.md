@@ -8,7 +8,11 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/, quickstart.md
 
+<<<<<<< HEAD
 **Revisado**: 2026-11-18, para a stack Node.js + TypeScript + SQLite (research.md item 1). Organização por história de usuário. Os caminhos de arquivo seguem plan.md "Project Structure".
+=======
+**Revisado**: 2026-11-17, para a stack Node.js + TypeScript + SQLite (research.md item 1). Os IDs T001–T075 mantêm o propósito da versão .NET; caminhos e comandos mudaram. A antiga T072.5 virou T076. T077, T078 e T079 são novas. T089 é a fábrica simulada. T080–T088 vêm da integração das clarificações de 2026-11-17 (spec.md, "Clarifications"; research.md itens 17 a 20). A lista de 119 tarefas em C# publicada na mesma data foi substituída por esta; o que nela era regra de negócio está aqui.
+>>>>>>> 4cd1bd3 (feat(seed): optional mock factory dataset (T089))
 
 **Leitura**: quem vai implementar começa por `AGENTS.md` na raiz e pelo brief da história em `briefs/`; deste arquivo, leia só a seção da sua fase. Tarefas concluídas (`[X]`) aparecem resumidas em uma linha; o texto original está no histórico (`git log -p -- specs/001-reimplementar-printfarm/tasks.md`).
 
@@ -186,6 +190,7 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 - [X] T081 [US1] `POST /api/lots/{id}/queue`: 201 cria o item, 200 atualiza o mesmo item (`queueAction`)
 - [X] T082 [US1] `GET /api/lots` com `reservedGrams`, `missingMaterialG` e os campos `released*`
 - [X] T083 [US1] Teste: editar o perfil não muda lotes liberados; liberação nova usa o perfil novo
+- [X] T089 [US1] Fábrica simulada opcional para demonstração: escrever primeiro `server/tests/infrastructure/factory-seed.test.ts` (20 impressoras cobrindo os seis estados operacionais, nomes marcados como fictícios, lotes na fila com reserva integral e só em impressora compatível e disponível, carga única). Depois criar `server/src/infrastructure/seed/factory-dataset.ts` (só dados, em unidades inteiras), `factory-seed.ts` (cadastros por SQL; pedidos, lotes e fila pelos casos de uso existentes) e `factory-cli.ts`, com o script `seed:factory` em `server/package.json`. Só com `NODE_ENV=development`. Estado de impressora fora de Disponível é cadastro fictício, sem execução por trás, até a US5
 
 **Checkpoint**: Seção 1 do quickstart passa. Parar aqui já é um MVP demonstrável
 
