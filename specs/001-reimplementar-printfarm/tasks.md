@@ -8,7 +8,9 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/, quickstart.md
 
-**Revisado**: 2026-11-17, para a stack Node.js + TypeScript + SQLite (research.md item 1). Os IDs T001–T075 mantêm o propósito da versão .NET; caminhos e comandos mudaram. A antiga T072.5 virou T076. T077 e T078 são novas. T080–T088 vêm da integração das clarificações de 2026-11-17 (spec.md, "Clarifications"; research.md itens 17 a 20). A lista de 119 tarefas em C# publicada na mesma data foi substituída por esta; o que nela era regra de negócio está aqui.
+**Revisado**: 2026-11-17, para a stack Node.js + TypeScript + SQLite (research.md item 1). Os IDs T001–T075 mantêm o propósito da versão .NET; caminhos e comandos mudaram. A antiga T072.5 virou T076. T077, T078 e T079 são novas. T089 é a fábrica simulada. T080–T088 vêm da integração das clarificações de 2026-11-17 (spec.md, "Clarifications"; research.md itens 17 a 20). A lista de 119 tarefas em C# publicada na mesma data foi substituída por esta; o que nela era regra de negócio está aqui.
+
+**Leitura**: quem vai implementar começa por `AGENTS.md` na raiz e pelo brief da história em `briefs/`; deste arquivo, leia só a seção da sua fase. Tarefas concluídas (`[X]`) aparecem resumidas em uma linha; o texto original está no histórico (`git log -p -- specs/001-reimplementar-printfarm/tasks.md`).
 
 **Tests**: Entram nas regras de domínio, na orquestração e no acesso por papel. O princípio II da constituição exige o teste vermelho antes da regra. Jornada de tela fica em `specs/001-reimplementar-printfarm/quickstart.md`. Na SPA, Vitest cobre só o guarda de rota.
 
@@ -44,12 +46,12 @@ Valem para toda tarefa abaixo, além das "Regras para agentes" da constituição
 
 **Purpose**: Workspaces, configuração e limpeza do desenho .NET, sem regra de negócio
 
-- [X] T001 Criar `package.json` na raiz com `"private": true`, `"workspaces": ["server", "web"]`, `"engines": { "node": ">=24" }` e os scripts `test` (`npm test --workspaces`), `typecheck` (`npm run typecheck --workspaces`) e `db:migrate` (`npm run db:migrate --workspace server`). Criar `server/package.json` com `"type": "module"`, `"engines": { "node": ">=24" }`, as dependências listadas em "Regras para quem implementa" e os scripts `dev` (`node --watch --env-file-if-exists=../.env src/api/main.ts`), `start` (`node --env-file-if-exists=../.env src/api/main.ts`), `test` (`vitest run`), `typecheck` (`tsc --noEmit`), `db:migrate` (`node --env-file-if-exists=../.env src/infrastructure/db/migrate-cli.ts`) e `job:hourly` (`node --env-file-if-exists=../.env src/infrastructure/jobs/run-once.ts`). Remover os restos do desenho .NET: `Farm3d.sln`, a pasta `src/` inteira e `docker-compose.yml`
-- [X] T002 [P] Criar `server/tsconfig.json` com `strict`, `noEmit`, `target` `ES2023`, `module` e `moduleResolution` `nodenext`, `allowImportingTsExtensions`, `verbatimModuleSyntax`, `erasableSyntaxOnly`, `noUncheckedIndexedAccess` e `types: ["node"]`, incluindo `src`, `tests` e `vitest.config.ts`. Criar `server/vitest.config.ts` com `environment: 'node'` e `include: ['tests/**/*.test.ts']`
-- [X] T003 [P] A SPA em `web/` já existe (commit 675265c). Acrescentar em `web/package.json` o script `typecheck` (`vue-tsc --noEmit`) e conferir `dev`, `test` e `build`. Rodar `npm install` na raiz e versionar `package-lock.json`
-- [X] T004 [P] Reescrever `.env.example` só com nomes e valores não secretos: `NODE_ENV=development`, `PORT=5088`, `FARM3D_DB_PATH=data/farm3d.db`, `FARM3D_FILES_DIR=data/files3d`, `CORS_ORIGINS=http://localhost:5173`, `JWT_SIGNING_KEY=` e `FARM3D_SEED_PASSWORD=` vazios. Acrescentar a `.gitignore` as linhas `data/`, `*.db`, `*.db-wal`, `*.db-shm` e `__pycache__/`, e tirar do índice o `__pycache__` já versionado em `.specify/`
-- [X] T005 [P] Em `.editorconfig`, remover a seção `[*.cs]`
-- [X] T006 Criar `server/src/infrastructure/config.ts` que lê as variáveis de T004 uma vez e devolve um objeto tipado. Recusar a subida, com mensagem clara, se `JWT_SIGNING_KEY` faltar ou tiver menos de 32 bytes. `PORT` padrão 5088. `CORS_ORIGINS` separado por vírgula
+- [X] T001 Workspaces npm (raiz e `server/`), scripts e remoção dos restos .NET
+- [X] T002 [P] `server/tsconfig.json` e `server/vitest.config.ts`
+- [X] T003 [P] Script `typecheck` na SPA, `npm install` e `package-lock.json`
+- [X] T004 [P] `.env.example` sem segredo; `.gitignore` com `data/`, `*.db` e `__pycache__/`
+- [X] T005 [P] `.editorconfig` sem a seção `[*.cs]`
+- [X] T006 `server/src/infrastructure/config.ts`
 
 ---
 
@@ -59,17 +61,17 @@ Valem para toda tarefa abaixo, além das "Regras para agentes" da constituição
 
 **⚠️ CRITICAL**: Nenhuma história começa antes desta fase
 
-- [X] T007 Escrever `server/tests/architecture/domain-purity.test.ts`: percorre todo `.ts` de `server/src/domain/` e falha se algum import não for relativo ou sair da pasta, se importar `node:*` ou pacote, ou se o texto contiver `Date.now(`, `new Date()`, `Math.random(`, `process.` ou `console.`. Falha também se a pasta não existir. Criar `server/src/domain/result.ts` com `type Result<T> = { ok: true; value: T } | { ok: false; code: string; message: string }` e os construtores `ok` e `fail`
-- [X] T008 [P] Criar `server/src/domain/enums.ts` com todos os enums da tabela Enums de `data-model.md`, cada um como objeto `as const` mais tipo união, com os valores exatos (`AppRole`, `MaterialKind`, `QuoteStatus`, `CommercialOrderStatus`, `ProductionLotStatus`, `PrinterOperationalStatus`, `PrintRunStatus`, `PrintFailureReason`, `PurchaseOrderStatus`, `StockMovementKind`, `PaymentMethod`)
-- [X] T009 [P] Escrever primeiro `server/tests/domain/units.test.ts` e ver falhar: `parseScaled('12.345', 3)` = 12345; `parseScaled('12.3456', 3)` recusa; `parseScaled('0.1', 2)` = 10; `formatScaled(13334, 3)` = `'13.334'`; `mulDivRoundHalfUp(5, 1, 10)` = 1 e `mulDivRoundHalfUp(4, 1, 10)` = 0; `mulDivCeil(40000, 1, 3)` = 13334; produto acima de `Number.MAX_SAFE_INTEGER` no meio da conta dá resultado exato; resultado final acima do limite recusa. Depois implementar `server/src/domain/units.ts` com `BigInt` interno até o teste passar
-- [X] T010 Escrever primeiro `server/tests/infrastructure/db.test.ts` e ver falhar: as migrações aplicam em `:memory:`; rodar de novo não aplica nada; arquivo novo com número menor que o último aplicado também é aplicado; `withTransaction` faz rollback quando a função lança e recusa com rollback quando a função devolve `Promise`; `farm_settings.examples_are_fictional = 0` é recusado pelo `CHECK`. Depois criar `server/src/infrastructure/db/database.ts` (`openDatabase(path)` com os `PRAGMA` de research.md item 3, `withTransaction`), `server/src/infrastructure/db/migrate.ts` (aplica, em ordem de nome, todo arquivo de `server/migrations/` ainda ausente de `schema_migrations`), `server/src/infrastructure/db/migrate-cli.ts` e `server/migrations/0001-foundation.sql` com `users` e `farm_settings` (linha única com os padrões de data-model.md, inclusive `time_zone`)
-- [X] T011 Escrever primeiro `server/tests/domain/password-policy.test.ts` e `server/tests/domain/login-lockout.test.ts` e ver falhar, com os números de research.md item 4 (6 caracteres e quatro classes; 5 falhas travam 5 minutos; login certo zera; travado continua travado até o instante). Depois implementar `server/src/domain/rules/password-policy.ts` e `server/src/domain/rules/login-lockout.ts`. Em seguida `server/src/infrastructure/auth/password.ts` (`scrypt` no formato de data-model.md, `timingSafeEqual`), `server/src/infrastructure/repositories/users-repo.ts` e `server/src/infrastructure/seed/identity-seed.ts` com um usuário por papel e os cinco e-mails de `quickstart.md`, só com `NODE_ENV=development` e `FARM3D_SEED_PASSWORD` presente
-- [X] T012 Implementar `POST /api/auth/login` em `server/src/api/routes/auth.ts` conforme `contracts/auth.md`, usando `login-lockout` e `server/src/infrastructure/auth/jwt.ts` (`jose`, HS256, 8 horas, `sub` e `role`). 401 sempre com a mesma mensagem
-- [X] T013 Criar `server/src/api/app.ts` com `buildApp({ db, config, now })`: verificação do Bearer, `requireRoles(...papéis)` como `preHandler`, tratador de erro em `application/problem+json` (research.md item 15), CORS só com `CORS_ORIGINS` (qualquer origem só em development) e registro das rotas. Criar `server/src/api/main.ts` que abre o banco, aplica migrações, roda a semente e escuta `PORT`. Escrever `server/tests/api/authz.test.ts` com `app.inject`: rota protegida sem token responde 401, com papel errado responde 403, com papel certo passa
-- [X] T014 Escrever primeiro `web/tests/route-guard.spec.ts` exigindo que visita a `/fila` sem sessão caia em `/entrar`. Depois ajustar `web/src/router/index.ts` e `web/src/stores/session.ts` até o teste passar
-- [X] T015 Criar `server/src/infrastructure/jobs/hourly-farm-job.ts` com `runHourlyPass(db, now)` ainda sem efeito, agendá-lo em `server/src/api/main.ts` com `setInterval` de uma hora e uma execução na subida, e criar `server/src/infrastructure/jobs/run-once.ts` para o script `job:hourly`
+- [X] T007 `server/tests/architecture/domain-purity.test.ts` e `server/src/domain/result.ts`
+- [X] T008 [P] `server/src/domain/enums.ts`
+- [X] T009 [P] `server/tests/domain/units.test.ts` e `server/src/domain/units.ts`
+- [X] T010 `server/tests/infrastructure/db.test.ts`, `db/database.ts`, `db/migrate.ts`, `db/migrate-cli.ts` e `0001-foundation.sql`
+- [X] T011 Política de senha e travamento de login (teste e regra), `auth/password.ts`, `users-repo.ts`, `identity-seed.ts`
+- [X] T012 `POST /api/auth/login` em `routes/auth.ts`, com `auth/jwt.ts`
+- [X] T013 `api/app.ts` (`requireRoles`, problem+json, CORS), `api/main.ts` e `tests/api/authz.test.ts`
+- [X] T014 `web/tests/route-guard.spec.ts`, router e store de sessão
+- [X] T015 `jobs/hourly-farm-job.ts`, agendamento em `main.ts` e `jobs/run-once.ts`
 
-- [X] T079 Criar `web/src/pages/EntrarPage.vue` (tela de entrada com e-mail e senha, que guarda a sessão e volta à rota pedida), `web/src/api.ts` (cliente HTTP com o Bearer da sessão e leitura do `detail` do problem+json) e `web/src/style.css`. Lacuna encontrada na implementação: nenhuma tarefa criava a tela de entrada que o guarda de T014 usa
+- [X] T079 `web/src/pages/EntrarPage.vue`, `web/src/api.ts` e `web/src/style.css`
 
 **Checkpoint**: Login devolve token, 401 e 403 testados, a SPA desvia quem não entrou, `npm test` e `npm run typecheck` verdes na raiz
 
@@ -83,34 +85,36 @@ Valem para toda tarefa abaixo, além das "Regras para agentes" da constituição
 
 ### Tests for User Story 1
 
-- [X] T016 [P] [US1] Escrever `server/tests/domain/lot-split.test.ts` falhando: 10 peças, 4 por prancha, 3600 s e 40000 mg por prancha produzem (4, 3600, 40000), (4, 3600, 40000), (2, 1800, 20000); 10 peças com 3 por prancha arredondam a prancha parcial para cima (40000 mg ÷ 3 → 13334); peças por prancha menor que 1 recusa. Regra: "10 peças com 4 por prancha produzem 3 lotes, o último com metade do tempo e metade do material."
-- [X] T017 [P] [US1] Escrever `server/tests/domain/fifo-reservation.test.ts` falhando: o lote de material com `receivedAt` mais antigo é alocado primeiro; empate por `id`; alocação atravessa lotes até cobrir; saldo que não cobre devolve recusa e alocação vazia. Regra: "Saldo insuficiente recusa a liberação inteira, sem reserva parcial."
-- [X] T018 [P] [US1] Escrever `server/tests/domain/printer-compatibility.test.ts` falhando: lista que não contém o material recusa; lista vazia aceita; impressora inativa, fora de Available ou ocupada recusa
-- [X] T077 [US1] Escrever `server/tests/domain/sales-order-state.test.ts` falhando: QuotePending vai só a Approved ou Cancelled; Cancelled não muda; não existe volta a QuotePending; só Approved ou InProduction admitem liberar lotes. Regra: "Pedido cancelado não muda mais de estado."
-- [X] T026 [US1] Escrever `server/tests/application/release-lots.test.ts` com SQLite `:memory:` e migrações, falhando antes de T027: cenário 10/4 grava 3 lotes Released e as reservas; saldo insuficiente deixa zero linhas em `production_material_reservations` e saldo intacto; repetir a liberação recusa e não dobra o reservado; pedido QuotePending ou Cancelled recusa
+- [X] T016 [P] [US1] `server/tests/domain/lot-split.test.ts`
+- [X] T017 [P] [US1] `server/tests/domain/fifo-reservation.test.ts`
+- [X] T018 [P] [US1] `server/tests/domain/printer-compatibility.test.ts`
+- [X] T077 [US1] `server/tests/domain/sales-order-state.test.ts`
+- [X] T026 [US1] `server/tests/application/release-lots.test.ts`
 
 ### Implementation for User Story 1
 
-- [X] T019 [P] [US1] Criar os tipos de catálogo e máquina em `server/src/domain/entities/catalog.ts` (`Color`, `Product`, `PrintProfile`, `Printer`, `PrinterMaterial`), com os campos e unidades de data-model.md. Só tipos
-- [X] T020 [P] [US1] Criar `server/src/domain/entities/stock.ts` (`Supplier`, `Material`, `MaterialLot`, `StockItem`, `StockMovement`). Só tipos
-- [X] T021 [P] [US1] Criar `server/src/domain/entities/sales.ts` (`Customer`, `SalesOrder`, `OrderLine`) e `server/src/domain/entities/production.ts` (`ProductionLot`, `ProductionMaterialReservation`, `PrintQueueItem`). Só tipos
-- [X] T022 [US1] Implementar `splitLots` em `server/src/domain/rules/lot-split.ts` até `lot-split.test.ts` passar
-- [X] T023 [US1] Implementar `allocateFifo` em `server/src/domain/rules/fifo-reservation.ts` até `fifo-reservation.test.ts` passar
-- [X] T024 [US1] Implementar `checkPrinterCompatibility` em `server/src/domain/rules/printer-compatibility.ts` até `printer-compatibility.test.ts` passar
-- [X] T078 [US1] Implementar `transitionSalesOrder` em `server/src/domain/rules/sales-order-state.ts` até `sales-order-state.test.ts` passar. Expor `PATCH /api/sales-orders/{id}/status` em `server/src/api/routes/sales-orders.ts` só para a saída de QuotePending (Approved ou Cancelled), conforme `contracts/comercial.md`, papéis Sales e Admin
-- [X] T025 [US1] Criar `server/migrations/0002-production-lots.sql` com as tabelas de T019–T021 (inclusive `suppliers`), colunas inteiras com o sufixo de unidade e `CHECK` dos enums. Criar `catalog-repo.ts`, `stock-repo.ts`, `sales-repo.ts` e `production-repo.ts` em `server/src/infrastructure/repositories/`
-- [X] T027 [US1] Implementar `releaseLots` em `server/src/application/use-cases/release-lots.ts`, dentro de `withTransaction`: carrega, corta com `splitLots`, aloca com `allocateFifo`, grava lotes, reservas, `StockItem.ReservedMg` e movimentações `Reserve`. Qualquer lote que não caiba desfaz tudo. Até `release-lots.test.ts` passar. Regra: "Repetir a liberação já reservada é recusado."
-- [X] T028 [US1] Escrever primeiro em `server/tests/domain/lot-state.test.ts` o caso Released → Queued (e recusa nos demais estados) e implementá-lo em `server/src/domain/rules/lot-state.ts`; T053 e T054 completam esses dois arquivos. Depois implementar `enqueueLot` em `server/src/application/use-cases/enqueue-lot.ts` usando essa transição e `checkPrinterCompatibility`
-- [X] T029 [US1] Expor `POST /api/sales-orders/{id}/lots/release`, `POST /api/lots/{id}/queue` e `GET /api/lots` em `server/src/api/routes/lots.ts` conforme `contracts/producao.md`, com o corpo 409 de saldo insuficiente em gramas. Expor `GET /api/sales-orders` e `GET /api/sales-orders/{id}` em `server/src/api/routes/sales-orders.ts` e `GET /api/printers` em `server/src/api/routes/cadastros/printers.ts` (T035 acrescenta a escrita), conforme `contracts/comercial.md` e `contracts/cadastros.md`
-- [X] T030 [US1] Criar `server/src/infrastructure/seed/demo-seed.ts` com o modelo "Suporte demo (fictício)", 4 peças, 60 min e 40 g por prancha, um fornecedor, dois lotes de material do mesmo insumo, as impressoras "Mesa A" e "Mesa B" e um pedido de 10 peças em QuotePending, conforme a seção 1 de `quickstart.md`. Só com `NODE_ENV=development`
-- [X] T031 [US1] Criar `web/src/pages/PedidoPage.vue` e `web/src/pages/FilaPage.vue` para confirmar o pedido semeado, liberar e mostrar os 3 lotes com a marca de dado fictício
+- [X] T019 [P] [US1] `server/src/domain/entities/catalog.ts`
+- [X] T020 [P] [US1] `server/src/domain/entities/stock.ts`
+- [X] T021 [P] [US1] `server/src/domain/entities/sales.ts` e `production.ts`
+- [X] T022 [US1] `splitLots` em `rules/lot-split.ts`
+- [X] T023 [US1] `allocateFifo` em `rules/fifo-reservation.ts`
+- [X] T024 [US1] `checkPrinterCompatibility` em `rules/printer-compatibility.ts`
+- [X] T078 [US1] `transitionSalesOrder` em `rules/sales-order-state.ts` e `PATCH /api/sales-orders/{id}/status`
+- [X] T025 [US1] `0002-production-lots.sql` e os repositórios `catalog`, `stock`, `sales` e `production`
+- [X] T027 [US1] `use-cases/release-lots.ts`, com `planRelease` em `rules/release-plan.ts`
+- [X] T028 [US1] Transição Released → Queued em `rules/lot-state.ts` e `use-cases/enqueue-lot.ts`
+- [X] T029 [US1] Rotas em `routes/lots.ts`, `routes/sales-orders.ts` (leitura) e `routes/cadastros/printers.ts` (leitura)
+- [X] T030 [US1] `seed/demo-seed.ts`, com os dados fictícios da seção 1 do quickstart
+- [X] T031 [US1] `web/src/pages/PedidoPage.vue` e `FilaPage.vue`
 
 ### Ajustes da US1 pelas clarificações de 2026-11-17
 
-- [ ] T080 [US1] Escrever primeiro, em `server/tests/application/release-lots.test.ts` e `server/tests/domain/lot-split.test.ts`, os casos novos e vê-los falhar: cada lote liberado grava `ReleasedPiecesPerPlate`, `ReleasedSecondsPerPlate` e `ReleasedMgPerPlate` copiados do perfil; a liberação termina com os lotes em Queued e um item de fila sem impressora por lote, na mesma transação; a recusa de saldo usa o código `INSUFFICIENT_MATERIAL`. Depois acrescentar as três colunas a `server/migrations/0002-production-lots.sql` (ainda não mesclada na base; depois de mesclada, usar migração nova), e ajustar `release-plan.ts`, `release-lots.ts`, `production-repo.ts` e `routes/lots.ts`. Regra: "Alterações do perfil valem só para novas liberações."
-- [ ] T081 [US1] Escrever primeiro em `server/tests/api/us1-flow.test.ts` que `POST /api/lots/{id}/queue` responde 200 ao atribuir ou trocar a impressora de um lote já Queued, atualizando o mesmo item de fila, e 201 para lote Released sem item; nunca duplica o item. Depois ajustar `enqueue-lot.ts`, `production-repo.ts` e a rota, com as mesmas validações de `checkPrinterCompatibility`
-- [ ] T082 [US1] Escrever primeiro em `server/tests/api/us1-flow.test.ts` que `GET /api/lots` devolve `reservedGrams`, `missingMaterialG` = max(0, plannedGrams − reservedGrams) e os três campos `released*`. Depois ajustar `production-repo.ts` e `routes/lots.ts`, e mostrar o material faltante em `web/src/pages/FilaPage.vue`
-- [ ] T083 [US1] Escrever em `server/tests/application/release-lots.test.ts` o caso da seção 1, passos 7 e 8, do quickstart: depois de liberar, alterar o perfil direto no banco; os lotes liberados mantêm parâmetros, gramas, minutos e reservas; uma nova liberação usa o perfil novo
+- [X] T080 [US1] Parâmetros da prancha preservados no lote; a liberação já enfileira sem impressora; código `INSUFFICIENT_MATERIAL`
+- [X] T081 [US1] `POST /api/lots/{id}/queue`: 201 cria o item, 200 atualiza o mesmo item (`queueAction`)
+- [X] T082 [US1] `GET /api/lots` com `reservedGrams`, `missingMaterialG` e os campos `released*`
+- [X] T083 [US1] Teste: editar o perfil não muda lotes liberados; liberação nova usa o perfil novo
+- [X] T089 [US1] Fábrica simulada opcional para demonstração: escrever primeiro `server/tests/infrastructure/factory-seed.test.ts` (20 impressoras cobrindo os seis estados operacionais, nomes marcados como fictícios, lotes na fila com reserva integral e só em impressora compatível e disponível, carga única). Depois criar `server/src/infrastructure/seed/factory-dataset.ts` (só dados, em unidades inteiras), `factory-seed.ts` (cadastros por SQL; pedidos, lotes e fila pelos casos de uso existentes) e `factory-cli.ts`, com o script `seed:factory` em `server/package.json`. Só com `NODE_ENV=development`. Estado de impressora fora de Disponível é cadastro fictício, sem execução por trás, até a US5
+- [X] T090 [US1] Refinar a interface sem mudar comportamento nem API: tema em `web/src/style.css`; barra superior em `web/src/App.vue`; `web/src/pages/FilaPage.vue` com indicadores, painel da frota (estado de cada impressora, com cor sempre acompanhada de rótulo) e fila agrupada por pedido; `PedidoPage.vue` e `EntrarPage.vue` no mesmo tema; tons de estado em `web/src/labels.ts`. O selo de dados fictícios continua em toda página com exemplo
 
 **Checkpoint**: Seção 1 do quickstart passa. Parar aqui já é um MVP demonstrável
 
@@ -356,30 +360,7 @@ Uma história que precise de outra mudança de esquema usa o próximo número li
 
 ---
 
-## Parallel Example: User Story 1
-
-```text
-T016 lot-split.test.ts
-T017 fifo-reservation.test.ts
-T018 printer-compatibility.test.ts
-
-T019 entities/catalog.ts
-T020 entities/stock.ts
-T021 entities/sales.ts e entities/production.ts
-```
-
-Um teste que importa uma regra inexistente falha na importação. Criar a regra exportando a função que devolve `fail('NOT_IMPLEMENTED', …)` conta como vermelho.
-
----
-
 ## Implementation Strategy
-
-### MVP First (User Story 1 Only)
-
-1. Phase 1 e Phase 2
-2. Phase 3
-3. Parar e executar a seção 1 de `quickstart.md`
-4. Demonstrar os 3 lotes, a recusa da Mesa B e a reserva que não dobra
 
 ### Incremental Delivery
 
@@ -406,6 +387,7 @@ Um teste que importa uma regra inexistente falha na importação. Criar a regra 
 ## Notes
 
 - [P] = outro arquivo, sem dependência incompleta
+- Um teste que importa uma regra inexistente falha na importação. Criar a regra exportando a função que devolve `fail('NOT_IMPLEMENTED', …)` conta como vermelho
 - A história no rótulo amarra a tarefa à spec
 - T080–T083 corrigem a US1 já implementada; T084–T085 formam a fase 8.5; T086, T087 e T088 entram na US5. A lista em C# publicada em 2026-11-17 tinha outra numeração; não usar aqueles IDs.
 - Os IDs não seguem a ordem do arquivo em três pontos: T077 e T026 aparecem entre os testes da US1, T055 entre os testes da US5 e T076 antes de T075. A ordem de execução é a ordem do arquivo

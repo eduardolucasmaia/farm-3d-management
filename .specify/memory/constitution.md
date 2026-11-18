@@ -1,4 +1,24 @@
 <!--
+Sync Impact Report (2.1.0)
+- Version change: 2.0.1 → 2.1.0 (MINOR: regra de leitura alterada e
+  dois donos de fato acrescentados)
+- Modified sections:
+  - Precedência e fonte única → linhas para `AGENTS.md` e para os
+    briefs de história
+  - Regras para agentes → regra 1 passa a limitar a leitura ao guia, ao
+    brief e às seções que ele aponta; a constituição inteira só para
+    quem muda desenho
+  - Regras para agentes → regra 12 (pré-voo) acrescentada
+- Motivo: os artefatos somam 235 KB. Um agente com janela de contexto
+  pequena que lê tudo não tem espaço para trabalhar, e foi o que levou
+  a código escrito sem execução e a desenho divergente em paralelo.
+- Artefatos conferidos: ✅ AGENTS.md (criado), ✅ CLAUDE.md (criado),
+  ✅ specs/001-reimplementar-printfarm/briefs/ (9 briefs criados),
+  ✅ .opencode/commands/farm.historia.md (criado),
+  ✅ specs/001-reimplementar-printfarm/tasks.md (concluídas resumidas),
+  ✅ .specify/memory/knowledge-graph.md
+- Follow-up TODOs: TODO(SOFTWARE_REF) continua aberto
+
 Sync Impact Report (2.0.1)
 - Version change: 2.0.0 → 2.0.1 (PATCH: esclarecimento, sem mudança de regra)
 - Modified sections:
@@ -183,6 +203,13 @@ Cada fato tem um só dono. Os outros artefatos citam, não reescrevem.
 | Ordem de execução e arquivos tocados | `tasks.md` | código |
 | Roteiro de prova por história | `quickstart.md` | tasks |
 | Mapa de relações entre os artefatos | `.specify/memory/knowledge-graph.md` | agentes |
+| Regras de trabalho resumidas, exemplos a copiar e estado das histórias | `AGENTS.md` | agentes |
+| O que ler, criar e tocar em cada história | `specs/NNN-slug/briefs/<história>.md` | agentes |
+
+`AGENTS.md` e os briefs são guias de leitura. Eles apontam para a
+fonte e MUST NOT conter regra de negócio; em conflito, vale a fonte e
+o guia é corrigido. Quem muda um artefato de desenho MUST conferir o
+brief das histórias que o citam, na mesma entrega.
 
 Classe, assinatura, formato de arquivo, algoritmo e stack MUST NOT
 aparecer nesta constituição.
@@ -370,9 +397,13 @@ Regras:
 
 Valem para qualquer agente ou modelo que escreva neste repositório.
 
-1. **Ler antes de escrever.** Antes de alterar qualquer arquivo, ler
-   esta constituição, `.specify/memory/knowledge-graph.md` e os
-   artefatos da feature ativa que o arquivo cita.
+1. **Ler antes de escrever, e só o necessário.** Para implementar
+   uma história: `AGENTS.md`, o brief da história e as seções que o
+   brief aponta. O agente MUST NOT escrever sem ter lido o brief e
+   SHOULD NOT carregar um artefato inteiro quando o brief aponta a
+   seção. Para mudar desenho (spec, plan, data-model, contracts,
+   tasks): esta constituição inteira e
+   `.specify/memory/knowledge-graph.md`, depois de `git fetch`.
 2. **Um escritor por artefato.** Dois agentes MUST NOT editar o mesmo
    arquivo ao mesmo tempo. Tarefas marcadas `[P]` em `tasks.md` são as
    únicas que rodam em paralelo. Arquivo tocado por várias histórias
@@ -403,6 +434,10 @@ Valem para qualquer agente ou modelo que escreva neste repositório.
     pede. Discordância vira nota para o mantenedor, não edição.
 11. **Violação bloqueia.** Mudança que quebra um princípio MUST NOT
     ser entregue com a justificativa de que é provisória.
+12. **Pré-voo.** Antes da primeira edição, o agente MUST rodar a suíte
+    de testes e a checagem de tipos e vê-las verdes. Sem ferramenta
+    para executar o código, o agente MUST parar. Código que não foi
+    executado MUST NOT ser entregue nem marcado como pronto.
 
 ## Governance
 
@@ -433,4 +468,4 @@ Conferência obrigatória:
 - Antes de encerrar a feature: `/speckit-converge` responde
   `Converged`.
 
-**Version**: 2.0.1 | **Ratified**: 2026-11-16 | **Last Amended**: 2026-11-17
+**Version**: 2.1.0 | **Ratified**: 2026-11-16 | **Last Amended**: 2026-11-17

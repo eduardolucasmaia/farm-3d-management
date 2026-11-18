@@ -28,6 +28,16 @@ npm run dev --workspace web
 
 Para recomeçar do zero, apague `data/farm3d.db` e rode `npm run db:migrate --workspace server` de novo.
 
+### Fábrica simulada (opcional)
+
+Para ver a plataforma com volume, carregue a fábrica fictícia: 20 impressoras em todos os estados operacionais, 6 materiais em 9 lotes, 11 pedidos e 20 lotes de produção na fila.
+
+```powershell
+npm run seed:factory --workspace server
+```
+
+Roda uma vez por banco e só com `NODE_ENV=development`. Os dados estão em `server/src/infrastructure/seed/factory-dataset.ts`. Impressora fora de Disponível é estado de cadastro fictício: não há execução por trás até a história 5. Ela convive com a semente da seção 1 (`PED-DEMO-001` e `PED-DEMO-002`).
+
 A API sobe em `http://localhost:5088`. A SPA em `http://localhost:5173`. Usuários semeados em Development: `admin@farm3d.local`, `vendas@farm3d.local`, `producao@farm3d.local`, `compras@farm3d.local`, `operador@farm3d.local`. A senha é a de `FARM3D_SEED_PASSWORD`. A semente só roda com `NODE_ENV=development`.
 
 Os testes automatizados MUST estar verdes antes das seções manuais. Cada seção vale sozinha se a semente da história estiver aplicada.

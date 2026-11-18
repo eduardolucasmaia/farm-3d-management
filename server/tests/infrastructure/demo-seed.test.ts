@@ -33,7 +33,7 @@ describe('semente de demonstração (T030)', () => {
     expect(changeSalesOrderStatus(db, { salesOrderId: second, to: 'Approved' }).ok).toBe(true)
     expect(releaseLots(db, { salesOrderId: second, userId: 'u', now })).toMatchObject({
       ok: false,
-      code: 'INSUFFICIENT_STOCK',
+      code: 'INSUFFICIENT_MATERIAL',
     })
     expect(count(db, 'production_lots', 'sales_order_id = ?', second)).toBe(0)
     expect(count(db, 'production_material_reservations')).toBe(4)
