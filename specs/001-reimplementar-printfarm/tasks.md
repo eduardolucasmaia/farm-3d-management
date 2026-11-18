@@ -152,7 +152,7 @@ Valem para toda tarefa abaixo, além das "Regras para agentes" da constituição
 ### Implementation for User Story 3
 
 - [ ] T040 [US3] Criar os tipos `Quote` e `QuoteLine` em `server/src/domain/entities/commercial.ts` e `transitionQuote` em `server/src/domain/rules/quote-state.ts` até `quote-state.test.ts` passar. Subtotal = quantidade × `UnitPriceCents`, inteiro exato
-- [ ] T041 [US3] Implementar `server/src/application/use-cases/quote-lifecycle.ts` e `server/src/application/use-cases/create-order-from-quote.ts`: geração exige Approved, validade não vencida e `promisedDate`; segunda geração recusada; motivo de rejeição acrescentado a Notes como `Rejeição: …`
+- [ ] T041 [FR-006] [US3] Implementar `server/src/application/use-cases/quote-lifecycle.ts` e `server/src/application/use-cases/create-order-from-quote.ts`: geração exige Approved, validade não vencida e `promisedDate`; segunda geração recusada; motivo de rejeição acrescentado a Notes como `Rejeição: …`
 - [ ] T042 [US3] Criar `server/migrations/0004-quotes.sql` e `server/src/infrastructure/repositories/quotes-repo.ts`
 - [ ] T043 [US3] Implementar os endpoints de orçamento de `contracts/comercial.md` em `server/src/api/routes/quotes.ts` e acrescentar a `server/src/api/routes/sales-orders.ts` o pedido manual em QuotePending, a geração por orçamento e o `PATCH` para Delivered. O `PATCH` de T078 não muda de comportamento
 - [ ] T044 [US3] Em `server/src/infrastructure/jobs/hourly-farm-job.ts`, expirar orçamentos elegíveis usando `transitionQuote`, com "hoje" no fuso de `farm_settings.time_zone`. Orçamento sem `validUntil` não expira
