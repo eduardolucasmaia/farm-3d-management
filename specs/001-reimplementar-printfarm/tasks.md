@@ -27,6 +27,7 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 **Purpose**: Project initialization and basic structure
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 - [ ] T001 Remove arquivos C# e .NET deixados por implementação anterior (`Farm3d.sln`, `src/`, `docker-compose.yml`) em `package.json`
 - [ ] T002 [P] Criar `package.json` raiz com workspaces: `server` e `web`
 - [ ] T003 [P] Criar `server/package.json` com dependências: fastify, @fastify/jwt, @fastify/problem, node:sqlite, vitest, typescript
@@ -46,6 +47,19 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 - [X] T005 [P] `.editorconfig` sem a seção `[*.cs]`
 - [X] T006 `server/src/infrastructure/config.ts`
 >>>>>>> 294e3bf (Newreports for smaller models)
+=======
+- [X] T001 Remove arquivos C# e .NET deixados por implementação anterior (`Farm3d.sln`, `src/`, `docker-compose.yml`) em `package.json`
+- [X] T002 [P] Criar `package.json` raiz com workspaces: `server` e `web`
+- [X] T003 [P] Criar `server/package.json` com dependências: fastify, @fastify/jwt, @fastify/problem, node:sqlite, vitest, typescript
+- [X] T004 [P] Criar `web/package.json` com dependências: vue, vite, vue-router, pinia, vitest
+- [X] T005 [P] Criar `server/tsconfig.json` e `web/tsconfig.json`
+- [X] T006 [P] Configurar Vitest no `server/vitest.config.ts`
+- [X] T007 [P] Configurar Vitest no `web/vitest.config.ts`
+- [X] T008 [P] Configurar ESLint e Prettier no `server` e no `web`
+- [X] T009 Criar estrutura de pastas do servidor: `server/src/domain/`, `server/src/application/`, `server/src/infrastructure/`, `server/src/api/`, `server/migrations/`, `server/tests/`
+- [X] T010 Criar estrutura de pastas do cliente: `web/src/pages/`, `web/src/router/`, `web/src/stores/`, `web/tests/`
+- [X] T011 Criar `.env.example` com nomes de variáveis (sem segredos): `JWT_SIGNING_KEY`, `FARM3D_SEED_PASSWORD`, `DATABASE_PATH`, `TIME_ZONE`
+>>>>>>> f67991f (specs: regenerate tasks.md by user story, close A2 clarification on accumulated hours)
 
 ---
 
@@ -75,7 +89,15 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 - [X] T015 `jobs/hourly-farm-job.ts`, agendamento em `main.ts` e `jobs/run-once.ts`
 
 - [X] T079 `web/src/pages/EntrarPage.vue`, `web/src/api.ts` e `web/src/style.css`
+<<<<<<< HEAD
 >>>>>>> 294e3bf (Newreports for smaller models)
+=======
+- [X] T016 [P] Definir enums em `server/src/domain/enums.ts`: `UserRole`, `QuoteStatus`, `SalesOrderCommercialStatus`, `ProductionLotStatus`, `PrinterOperationalStatus`, `StockMovementKind`, `PrintRunStatus`, `FailReason`, `PaymentMethod`, `MaterialType` — copiar valores exatos de `data-model.md`
+- [X] T017 [P] Definir utilitários de unidade em `server/src/domain/units.ts`: classes `Money`, `Grams`, `Minutes`, `CentsPerKg`, `CentsPerHour`, `CentsPerKwh` — pesagem inteira conforme "Unidades e representação" de data-model.md
+- [X] T018 [P] Criar classe `Result<T>` em `server/src/domain/result.ts` para domínio puro (fail/pass pattern)
+- [X] T019 Criar `server/src/infrastructure/db/connection.ts`: conexão SQLite com `busy_timeout`, `PRAGMA foreign_keys = on` (research.md item 3)
+- [X] T020 Criar framework de migrações em `server/src/infrastructure/db/migrations.ts`: executar SQL de `migrations/*.sql` em ordem
+>>>>>>> f67991f (specs: regenerate tasks.md by user story, close A2 clarification on accumulated hours)
 
 ### Entity Definitions (Core Entities needed across stories)
 
@@ -194,6 +216,21 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 - [X] T090 [US1] Refinar a interface sem mudar comportamento nem API: tema em `web/src/style.css`; barra superior em `web/src/App.vue`; `web/src/pages/FilaPage.vue` com indicadores, painel da frota (estado de cada impressora, com cor sempre acompanhada de rótulo) e fila agrupada por pedido; `PedidoPage.vue` e `EntrarPage.vue` no mesmo tema; tons de estado em `web/src/labels.ts`. O selo de dados fictícios continua em toda página com exemplo
 
 **Checkpoint**: Seção 1 do quickstart passa. Parar aqui já é um MVP demonstrável
+**Independent Test**: Login com credenciais corretas retorna token JWT. Usuário sem sessão recebe 401. Usuário com papel inadequado recebe 403 em rota protegida.
+
+### Implementation for User Story 1
+
+- [ ] T062 [P] [US1] Implementar regra de travamento em `server/src/domain/rules/auth/rateLimit.ts`: 5 falhas seguidas → travar por 5 min; regra completa: research.md item 4
+- [ ] T063 [P] [US1] Implementar hash irreversível de senha em `server/src/infrastructure/auth/hash.ts`: scrypt, conforme princípio VII da constituição
+- [ ] T064 [P] [US1] Implementar geração/validação de JWT em `server/src/infrastructure/auth/jwt.ts`: HS256, validade 8 horas
+- [ ] T065 [US1] Implementar uso-caso de login em `server/src/application/use-cases/auth/login.ts`: POST /api/auth/login
+- [ ] T066 [US1] Implementar rota de login em `server/src/api/routes/auth/login.ts`: POST /api/auth/login, 200, 401
+- [ ] T067 [US1] Implementar uso-caso de criar usuário em `server/src/application/use-cases/users/createUser.ts`: POST /api/users
+- [ ] T068 [US1] Implementar rota de criar usuário em `server/src/api/routes/users/create.ts`: POST /api/users, 201, 400, 403
+- [ ] T069 [US1] Implementar uso-caso de listar usuários em `server/src/application/use-cases/users/listUsers.ts`: GET /api/users
+- [ ] T070 [US1] Implementar rota de listar usuários em `server/src/api/routes/users/list.ts`: GET /api/users, 200, 403
+
+**Checkpoint**: User Story 1 funcional — autenticação e controle de acesso funcionam independentemente
 
 ---
 
@@ -427,10 +464,35 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 - **US6**: T119–T120 (regras) → T121–T122 (use-cases + rotas)
 - **US7**: T123–T126 (regras) → T127–T130 (use-cases + rotas)
 - **US8**: T131–T133 (auditoria) → T134–T138 (wiring cross-cutting)
+<<<<<<< HEAD
 
 ---
 
 <<<<<<< HEAD
+## Parallel Example: User Story 5
+
+```bash
+# Launch all domain rules for User Story 5 together:
+Task: "Regra de liberação de lotes (T103)"
+Task: "Regra de enfileiramento (T104)"
+Task: "Regra de início de execução (T105)"
+Task: "Regra de conclusão (T107)"
+Task: "Regra de falha (T108)"
+
+# Launch all use-cases for User Story 5 together after rules:
+Task: "Use-cases de produção (T113)"
+Task: "Use-cases de printRun (T115)"
+Task: "Use-cases de printer (T117)"
+```
+=======
+>>>>>>> f67991f (specs: regenerate tasks.md by user story, close A2 clarification on accumulated hours)
+
+---
+
+## Implementation Strategy
+
+<<<<<<< HEAD
+=======
 ## Parallel Example: User Story 5
 
 ```bash
@@ -451,6 +513,7 @@ Task: "Use-cases de printer (T117)"
 
 ## Implementation Strategy
 
+>>>>>>> f67991f (specs: regenerate tasks.md by user story, close A2 clarification on accumulated hours)
 ### MVP First (User Stories 1 + 2)
 
 1. Complete Phase 1: Setup
@@ -460,10 +523,13 @@ Task: "Use-cases de printer (T117)"
 5. **STOP and VALIDATE**: Login + cadastro funcional e testável independentemente
 6. Deploy/demo if ready
 
+<<<<<<< HEAD
 =======
 ## Implementation Strategy
 
 >>>>>>> 294e3bf (Newreports for smaller models)
+=======
+>>>>>>> f67991f (specs: regenerate tasks.md by user story, close A2 clarification on accumulated hours)
 ### Incremental Delivery
 
 1. Complete Setup + Foundational → Foundation ready
@@ -550,4 +616,17 @@ O MVP é **US1 + US2** (autenticação + cadastros), que corresponde a **66 tare
 - Não copiar código de `docs_apoio/software_ref`; aquele diretório é leitura
 - Não criar módulo de assistente, cliente fiscal, SDK de impressora, ORM nem biblioteca de fila
 - Commit ao fim de cada checkpoint, com `npm test` e `npm run typecheck` verdes
+<<<<<<< HEAD
 >>>>>>> 294e3bf (Newreports for smaller models)
+=======
+- [P] tasks = different files, no dependencies
+- Story label maps task to specific user story for traceability
+- Each user story should be independently completable and testable
+- Verify tests fail before implementing
+- Commit after each task or logical group
+- Stop at any checkpoint to validate story independently
+- Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
+- **Identifiers never change**: FR-nnn, SC-nnn, Tnnn, story numbers, and principle numbers MUST NOT be renumbered or reused (Constitution rule 4)
+- **Names come from source**: entity names, field names, enum values, routes and roles MUST be copied from `data-model.md` and `contracts/` (Constitution rule 5)
+- **Don't guess**: missing rules, numbers, limits or behaviors MUST become `[NEEDS CLARIFICATION: question]` in the owning artifact (Constitution rule 6)
+>>>>>>> f67991f (specs: regenerate tasks.md by user story, close A2 clarification on accumulated hours)
