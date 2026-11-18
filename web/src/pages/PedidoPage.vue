@@ -3,7 +3,16 @@ import { computed, onMounted, ref } from 'vue'
 import { AxiosError } from 'axios'
 import { api, problemMessage } from '../api'
 import { useSessionStore } from '../stores/session'
-import { formatDate, formatNumber, lotStatusLabel, orderStatusLabel } from '../labels'
+import {
+  formatDate,
+  formatDuration,
+  formatNumber,
+  lotStatusLabel,
+  lotStatusTone,
+  orderStatusLabel,
+  orderStatusTone,
+  plainName,
+} from '../labels'
 
 interface OrderSummary {
   id: number
@@ -92,13 +101,14 @@ onMounted(loadOrders)
 
 <template>
   <main>
-    <div class="row">
+    <div class="page-head">
       <h1>Pedidos</h1>
       <span class="fictional">Dados de exemplo fictícios</span>
     </div>
+    <p class="lead">Vendas confirma o pedido; produção libera os lotes, e o material é reservado por inteiro.</p>
 
     <div class="layout">
-      <section class="card">
+      <section class="card flush list">
         <table>
           <thead>
             <tr><th>Pedido</th><th>Cliente</th><th>Estado</th><th>Prometido</th></tr>
@@ -112,10 +122,14 @@ onMounted(loadOrders)
               @click="select(o.id)"
               @keydown.enter="select(o.id)"
             >
-              <td>{{ o.number }}</td>
-              <td>{{ o.customerName }}</td>
-              <td>{{ orderStatusLabel[o.commercialStatus] ?? o.commercialStatus }}</td>
-              <td>{{ formatDate(o.promisedDate) }}</td>
+              <td class="order-number">{{ o.number }}</td>
+              <td>{{ plainName(o.customerName) }}</td>
+              <td>
+                <span class="status" :class="`tone-${orderStatusTone[o.commercialStatus] ?? 'idle'}`">
+                  {{ orderStatusLabel[o.commercialStatus] ?? o.commercialStatus }}
+                </span>
+              </td>
+              <td class="num">{{ formatDate(o.promisedDate) }}</td>
             </tr>
             <tr v-if="orders.length === 0"><td colspan="4" class="muted">Nenhum pedido.</td></tr>
           </tbody>
@@ -123,13 +137,22 @@ onMounted(loadOrders)
       </section>
 
       <section v-if="selected" class="card">
-        <h2>{{ selected.number }} · {{ orderStatusLabel[selected.commercialStatus] }}</h2>
-        <p class="muted">{{ selected.customerName }} · prometido para {{ formatDate(selected.promisedDate) }}</p>
+        <div class="detail-head">
+          <h2>{{ selected.number }}</h2>
+          <span class="status" :class="`tone-${orderStatusTone[selected.commercialStatus] ?? 'idle'}`">
+            {{ orderStatusLabel[selected.commercialStatus] ?? selected.commercialStatus }}
+          </span>
+        </div>
+        <p class="muted">{{ plainName(selected.customerName) }} · prometido para {{ formatDate(selected.promisedDate) }}</p>
 
         <h3>Linhas</h3>
-        <ul>
+        <ul class="lines">
           <li v-for="l in selected.lines" :key="l.id">
-            {{ l.quantity }} × {{ l.productName }} — {{ l.materialName ?? 'sem material' }}<span v-if="l.colorName">, {{ l.colorName }}</span><span v-if="l.size">, {{ l.size }}</span>
+            <span class="qty num">{{ l.quantity }} ×</span>
+            <span>{{ plainName(l.productName) }}</span>
+            <span class="chip">{{ plainName(l.materialName) || 'sem material' }}</span>
+            <span v-if="l.colorName" class="chip">{{ l.colorName }}</span>
+            <span v-if="l.size" class="chip">{{ l.size }}</span>
           </li>
         </ul>
 
@@ -151,25 +174,31 @@ onMounted(loadOrders)
         <p v-if="error" class="error" role="alert">{{ error }}</p>
 
         <h3>Lotes de produção</h3>
-        <table v-if="selected.lots.length > 0">
-          <thead>
-            <tr><th>#</th><th>Peças</th><th>Material</th><th>Tempo</th><th>Estado</th><th>Reserva por lote de material</th></tr>
-          </thead>
-          <tbody>
-            <tr v-for="lot in selected.lots" :key="lot.id">
-              <td>{{ lot.lotIndex }}</td>
-              <td>{{ lot.qtyPlanned }}</td>
-              <td>{{ formatNumber(lot.plannedGrams) }} g</td>
-              <td>{{ formatNumber(lot.plannedMinutes) }} min</td>
-              <td>{{ lotStatusLabel[lot.status] ?? lot.status }}</td>
-              <td>
-                <span v-for="r in lot.reservations" :key="r.materialLotCode ?? ''" class="chip">
-                  {{ r.materialLotCode }}: {{ formatNumber(r.grams) }} g
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-if="selected.lots.length > 0" class="table-scroll lots">
+          <table>
+            <thead>
+              <tr><th>Lote</th><th>Peças</th><th>Material</th><th>Tempo</th><th>Estado</th><th>Reserva por lote de material</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="lot in selected.lots" :key="lot.id">
+                <td class="num">{{ lot.lotIndex }}</td>
+                <td class="num">{{ lot.qtyPlanned }}</td>
+                <td class="num">{{ formatNumber(lot.plannedGrams) }} g</td>
+                <td class="num">{{ formatDuration(lot.plannedMinutes) }}</td>
+                <td>
+                  <span class="status" :class="`tone-${lotStatusTone[lot.status] ?? 'idle'}`">
+                    {{ lotStatusLabel[lot.status] ?? lot.status }}
+                  </span>
+                </td>
+                <td>
+                  <span v-for="r in lot.reservations" :key="r.materialLotCode ?? ''" class="chip">
+                    {{ plainName(r.materialLotCode) }} · {{ formatNumber(r.grams) }} g
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         <p v-else class="muted">Nenhum lote de produção ainda.</p>
       </section>
       <section v-else class="card muted">Escolha um pedido na lista.</section>
@@ -180,7 +209,7 @@ onMounted(loadOrders)
 <style scoped>
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.3fr);
   gap: 16px;
 }
 @media (max-width: 760px) {
@@ -188,21 +217,57 @@ onMounted(loadOrders)
     grid-template-columns: 1fr;
   }
 }
-tbody tr {
+.layout {
+  align-items: start;
+}
+.list tbody tr {
   cursor: pointer;
 }
-tbody tr.active {
-  background: var(--bg);
+.list tbody tr:hover {
+  background: var(--surface-2);
+}
+.list tbody tr.active {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.order-number {
+  font-weight: 650;
+  white-space: nowrap;
+}
+.detail-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.detail-head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.lines li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.lines .qty {
+  font-weight: 650;
+}
+.lines .chip {
+  margin: 0;
+}
+.lots {
+  border: 1px solid var(--border);
+  border-radius: 10px;
 }
 .actions {
-  margin: 12px 0;
-}
-.chip {
-  display: inline-block;
-  margin: 2px 4px 2px 0;
-  padding: 1px 6px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  font-size: 12px;
+  margin: 16px 0 4px;
 }
 </style>

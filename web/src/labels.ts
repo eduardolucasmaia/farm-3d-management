@@ -48,3 +48,48 @@ export function formatDate(isoDate: string | null): string {
   const [y, m, d] = isoDate.slice(0, 10).split('-')
   return `${d}/${m}/${y}`
 }
+
+/** Tom visual de cada estado (classe `tone-*` de style.css). O rótulo sempre acompanha a cor. */
+export const printerStatusTone: Record<string, string> = {
+  Available: 'good',
+  Printing: 'active',
+  AwaitingPickup: 'warning',
+  Preparing: 'warning',
+  InMaintenance: 'serious',
+  Unavailable: 'critical',
+}
+
+export const orderStatusTone: Record<string, string> = {
+  QuotePending: 'warning',
+  Approved: 'active',
+  InProduction: 'active',
+  AwaitingFinishing: 'warning',
+  ReadyToShip: 'good',
+  Delivered: 'good',
+  Cancelled: 'idle',
+}
+
+export const lotStatusTone: Record<string, string> = {
+  AwaitingPlanning: 'idle',
+  Released: 'idle',
+  Queued: 'active',
+  Printing: 'active',
+  Paused: 'warning',
+  AwaitingPickup: 'warning',
+  Completed: 'good',
+  Failed: 'critical',
+  Cancelled: 'idle',
+}
+
+/** Tira a marca "(fictício)" do nome quando a página já mostra o selo de dados fictícios. */
+export function plainName(name: string | null): string {
+  return (name ?? '').replace(/\s*\(fictício\)/g, '')
+}
+
+export function formatDuration(minutes: number): string {
+  const total = Math.round(minutes)
+  const h = Math.floor(total / 60)
+  const m = total % 60
+  if (h === 0) return `${m} min`
+  return m === 0 ? `${h} h` : `${h} h ${String(m).padStart(2, '0')}`
+}

@@ -191,6 +191,7 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 - [X] T082 [US1] `GET /api/lots` com `reservedGrams`, `missingMaterialG` e os campos `released*`
 - [X] T083 [US1] Teste: editar o perfil não muda lotes liberados; liberação nova usa o perfil novo
 - [X] T089 [US1] Fábrica simulada opcional para demonstração: escrever primeiro `server/tests/infrastructure/factory-seed.test.ts` (20 impressoras cobrindo os seis estados operacionais, nomes marcados como fictícios, lotes na fila com reserva integral e só em impressora compatível e disponível, carga única). Depois criar `server/src/infrastructure/seed/factory-dataset.ts` (só dados, em unidades inteiras), `factory-seed.ts` (cadastros por SQL; pedidos, lotes e fila pelos casos de uso existentes) e `factory-cli.ts`, com o script `seed:factory` em `server/package.json`. Só com `NODE_ENV=development`. Estado de impressora fora de Disponível é cadastro fictício, sem execução por trás, até a US5
+- [X] T090 [US1] Refinar a interface sem mudar comportamento nem API: tema em `web/src/style.css`; barra superior em `web/src/App.vue`; `web/src/pages/FilaPage.vue` com indicadores, painel da frota (estado de cada impressora, com cor sempre acompanhada de rótulo) e fila agrupada por pedido; `PedidoPage.vue` e `EntrarPage.vue` no mesmo tema; tons de estado em `web/src/labels.ts`. O selo de dados fictícios continua em toda página com exemplo
 
 **Checkpoint**: Seção 1 do quickstart passa. Parar aqui já é um MVP demonstrável
 
