@@ -40,7 +40,7 @@ Conferido contra a constituição 2.0.0 em 2026-11-17, depois da troca de stack.
 
 | Princípio | Gate | Antes da pesquisa | Depois do desenho (evidência) |
 |-----------|------|-------------------|-------------------------------|
-| I. Domínio puro, casca fina | Núcleo sem persistência, HTTP, relógio e UI | A estrutura separa `server/src/domain/` das demais pastas | T007 `domain-purity.test.ts` proíbe import fora do domínio, `node:*`, pacote npm, `Date.now()`, `new Date()` sem argumento, `Math.random()`, `process` e `console` |
+| I. Domínio puro, casca fina | Núcleo sem persistência, HTTP, relógio e UI | A estrutura separa `server/src/domain/` das demais pastas | T007 `domain-purity.test.ts` proíbe import fora do domínio, `node:*`, pacote npm, `Date.now()`, `new Date()` sem argumento, `Math.random()`, `process` e `console`. FR-003: todas as entidades de cadastro (`Customer`, `Supplier`, `Material`, `Printer`, etc.) vivem em `server/src/domain/entities/` |
 | I | Nenhuma decisão fora do núcleo | research.md item 2 | `release-lots` chama `splitLots` e `allocateFifo` (T027); `enqueue-lot` chama `checkPrinterCompatibility` (T028); `quote-lifecycle` chama `transitionQuote` (T041); `run-execution` chama `transitionPrinter` e `transitionLot` (T056); `PATCH` de pedido chama `transitionSalesOrder` (T078) |
 | II. Teste antes da regra | Teste da regra precede a regra | research.md item 13 | T009, T011, T016–T018, T032, T039, T046, T052–T053, T059, T063–T064, T077 vêm antes da tarefa que implementa a regra |
 | II | Orquestração com teste próprio, antes | Testes com SQLite `:memory:` em `server/tests/application/` | T026 antes de T027; T055 antes de T056; T069 antes de T070; T010 testa migração e rollback |
@@ -67,7 +67,7 @@ Nenhuma violação. As duas observações da revisão anterior foram resolvidas:
 | G1 | MEDIUM | Parcial. Product já tem material padrão; falta o vínculo com o arquivo 3D | Acrescentar `File3DId` a Product em T034 (migração 0003) |
 | I2 | MEDIUM | Não se aplica: referia-se à numeração da lista em C# | — |
 | A1 | MEDIUM | Resolvido: valores inteiros em mg, prancha parcial arredondada para cima (research.md itens 6 e 11) | — |
-| A2 | MEDIUM | Aberto: `[NEEDS CLARIFICATION]` em data-model.md sobre horas de execução que falha | Responder antes de T052 |
+| A2 | MEDIUM | Resolvido: data-model.md afirma que horas acumuladas também aumentam na falha | —
 
 ## Project Structure
 

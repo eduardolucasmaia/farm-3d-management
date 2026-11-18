@@ -140,7 +140,7 @@ Pausa do lote não muda o estado da impressora: ela permanece Em impressão. A r
 
 "Concluir a impressão deixa o lote aguardando retirada e a impressora aguardando retirada." "A impressora só volta a disponível depois da retirada e da preparação, e somente se as horas acumuladas estiverem abaixo do limite."
 
-Horas acumuladas aumentam pelo tempo real de impressão na conclusão, não pela pausa. [NEEDS CLARIFICATION: execução que falha também soma o tempo real às horas acumuladas? Achado A2 de analysis.md.]
+Horas acumuladas aumentam pelo tempo real de impressão na conclusão (não pela pausa) e também na falha, pois a impressora esteve operando durante o tempo real medido.
 
 ### Consumo e reimpressão
 
