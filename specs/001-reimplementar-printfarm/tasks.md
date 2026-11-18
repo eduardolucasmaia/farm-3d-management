@@ -8,13 +8,10 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/, quickstart.md
 
-<<<<<<< HEAD
 **Revisado**: 2026-11-18, para a stack Node.js + TypeScript + SQLite (research.md item 1). Organização por história de usuário. Os caminhos de arquivo seguem plan.md "Project Structure".
-=======
-**Revisado**: 2026-11-17, para a stack Node.js + TypeScript + SQLite (research.md item 1). Os IDs T001–T075 mantêm o propósito da versão .NET; caminhos e comandos mudaram. A antiga T072.5 virou T076. T077, T078 e T079 são novas. T089 é a fábrica simulada. T080–T088 vêm da integração das clarificações de 2026-11-17 (spec.md, "Clarifications"; research.md itens 17 a 20). A lista de 119 tarefas em C# publicada na mesma data foi substituída por esta; o que nela era regra de negócio está aqui.
->>>>>>> 4cd1bd3 (feat(seed): optional mock factory dataset (T089))
 
 **Leitura**: quem vai implementar começa por `AGENTS.md` na raiz e pelo brief da história em `briefs/`; deste arquivo, leia só a seção da sua fase. Tarefas concluídas (`[X]`) aparecem resumidas em uma linha; o texto original está no histórico (`git log -p -- specs/001-reimplementar-printfarm/tasks.md`).
+**Revisado**: 2026-11-18, para a stack Node.js + TypeScript + SQLite (research.md item 1). Organização por história de usuário. Os caminhos de arquivo seguem plan.md "Project Structure".
 
 **Tests**: Entram nas regras de domínio, na orquestração e no acesso por papel. O princípio II da constituição exige o teste vermelho antes da regra. Jornada de tela fica em `specs/001-reimplementar-printfarm/quickstart.md`. Na SPA, Vitest cobre só o guarda de rota.
 
@@ -26,28 +23,6 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 **Purpose**: Project initialization and basic structure
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-- [ ] T001 Remove arquivos C# e .NET deixados por implementação anterior (`Farm3d.sln`, `src/`, `docker-compose.yml`) em `package.json`
-- [ ] T002 [P] Criar `package.json` raiz com workspaces: `server` e `web`
-- [ ] T003 [P] Criar `server/package.json` com dependências: fastify, @fastify/jwt, @fastify/problem, node:sqlite, vitest, typescript
-- [ ] T004 [P] Criar `web/package.json` com dependências: vue, vite, vue-router, pinia, vitest
-- [ ] T005 [P] Criar `server/tsconfig.json` e `web/tsconfig.json`
-- [ ] T006 [P] Configurar Vitest no `server/vitest.config.ts`
-- [ ] T007 [P] Configurar Vitest no `web/vitest.config.ts`
-- [ ] T008 [P] Configurar ESLint e Prettier no `server` e no `web`
-- [ ] T009 Criar estrutura de pastas do servidor: `server/src/domain/`, `server/src/application/`, `server/src/infrastructure/`, `server/src/api/`, `server/migrations/`, `server/tests/`
-- [ ] T010 Criar estrutura de pastas do cliente: `web/src/pages/`, `web/src/router/`, `web/src/stores/`, `web/tests/`
-- [ ] T011 Criar `.env.example` com nomes de variáveis (sem segredos): `JWT_SIGNING_KEY`, `FARM3D_SEED_PASSWORD`, `DATABASE_PATH`, `TIME_ZONE`
-=======
-- [X] T001 Workspaces npm (raiz e `server/`), scripts e remoção dos restos .NET
-- [X] T002 [P] `server/tsconfig.json` e `server/vitest.config.ts`
-- [X] T003 [P] Script `typecheck` na SPA, `npm install` e `package-lock.json`
-- [X] T004 [P] `.env.example` sem segredo; `.gitignore` com `data/`, `*.db` e `__pycache__/`
-- [X] T005 [P] `.editorconfig` sem a seção `[*.cs]`
-- [X] T006 `server/src/infrastructure/config.ts`
->>>>>>> 294e3bf (Newreports for smaller models)
-=======
 - [X] T001 Remove arquivos C# e .NET deixados por implementação anterior (`Farm3d.sln`, `src/`, `docker-compose.yml`) em `package.json`
 - [X] T002 [P] Criar `package.json` raiz com workspaces: `server` e `web`
 - [X] T003 [P] Criar `server/package.json` com dependências: fastify, @fastify/jwt, @fastify/problem, node:sqlite, vitest, typescript
@@ -59,7 +34,6 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 - [X] T009 Criar estrutura de pastas do servidor: `server/src/domain/`, `server/src/application/`, `server/src/infrastructure/`, `server/src/api/`, `server/migrations/`, `server/tests/`
 - [X] T010 Criar estrutura de pastas do cliente: `web/src/pages/`, `web/src/router/`, `web/src/stores/`, `web/tests/`
 - [X] T011 Criar `.env.example` com nomes de variáveis (sem segredos): `JWT_SIGNING_KEY`, `FARM3D_SEED_PASSWORD`, `DATABASE_PATH`, `TIME_ZONE`
->>>>>>> f67991f (specs: regenerate tasks.md by user story, close A2 clarification on accumulated hours)
 
 ---
 
@@ -69,15 +43,9 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-<<<<<<< HEAD
+
 ### Database and Domain Foundation
 
-- [ ] T012 [P] Definir enums em `server/src/domain/enums.ts`: `UserRole`, `QuoteStatus`, `SalesOrderCommercialStatus`, `ProductionLotStatus`, `PrinterOperationalStatus`, `StockMovementKind`, `PrintRunStatus`, `FailReason`, `PaymentMethod`, `MaterialType` — copiar valores exatos de `data-model.md`
-- [ ] T013 [P] Definir utilitários de unidade em `server/src/domain/units.ts`: classes `Money`, `Grams`, `Minutes`, `CentsPerKg`, `CentsPerHour`, `CentsPerKwh` — pesagem inteira conforme "Unidades e representação" de data-model.md
-- [ ] T014 [P] Criar classe `Result<T>` em `server/src/domain/result.ts` para domínio puro (fail/pass pattern)
-- [ ] T015 Criar `server/src/infrastructure/db/connection.ts`: conexão SQLite com `busy_timeout`, `PRAGMA foreign_keys = on` (research.md item 3)
-- [ ] T016 Criar framework de migrações em `server/src/infrastructure/db/migrations.ts`: executar SQL de `migrations/*.sql` em ordem
-=======
 - [X] T007 `server/tests/architecture/domain-purity.test.ts` e `server/src/domain/result.ts`
 - [X] T008 [P] `server/src/domain/enums.ts`
 - [X] T009 [P] `server/tests/domain/units.test.ts` e `server/src/domain/units.ts`
@@ -89,72 +57,70 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 - [X] T015 `jobs/hourly-farm-job.ts`, agendamento em `main.ts` e `jobs/run-once.ts`
 
 - [X] T079 `web/src/pages/EntrarPage.vue`, `web/src/api.ts` e `web/src/style.css`
-<<<<<<< HEAD
->>>>>>> 294e3bf (Newreports for smaller models)
-=======
+
+
 - [X] T016 [P] Definir enums em `server/src/domain/enums.ts`: `UserRole`, `QuoteStatus`, `SalesOrderCommercialStatus`, `ProductionLotStatus`, `PrinterOperationalStatus`, `StockMovementKind`, `PrintRunStatus`, `FailReason`, `PaymentMethod`, `MaterialType` — copiar valores exatos de `data-model.md`
 - [X] T017 [P] Definir utilitários de unidade em `server/src/domain/units.ts`: classes `Money`, `Grams`, `Minutes`, `CentsPerKg`, `CentsPerHour`, `CentsPerKwh` — pesagem inteira conforme "Unidades e representação" de data-model.md
 - [X] T018 [P] Criar classe `Result<T>` em `server/src/domain/result.ts` para domínio puro (fail/pass pattern)
 - [X] T019 Criar `server/src/infrastructure/db/connection.ts`: conexão SQLite com `busy_timeout`, `PRAGMA foreign_keys = on` (research.md item 3)
 - [X] T020 Criar framework de migrações em `server/src/infrastructure/db/migrations.ts`: executar SQL de `migrations/*.sql` em ordem
->>>>>>> f67991f (specs: regenerate tasks.md by user story, close A2 clarification on accumulated hours)
 
 ### Entity Definitions (Core Entities needed across stories)
 
-- [ ] T017 [P] Criar tipos de entidade em `server/src/domain/entities/user.ts`: `User` com `email`, `name`, `role`, `passwordHash`
-- [ ] T018 [P] Criar tipos de entidade em `server/src/domain/entities/customer.ts`: `Customer` com `name`, `contact`, `address`
-- [ ] T019 [P] Criar tipos de entidade em `server/src/domain/entities/supplier.ts`: `Supplier` com `name`, `contact`, `paymentTerms`, `avgLeadTimeDays`
-- [ ] T020 [P] Criar tipos de entidade em `server/src/domain/entities/product.ts`: `Product` com `name`, `sku`, `defaultSellPrice`, `printProfileId`, `materialId`, `fileId`, `offeredColors`, `offeredSizes`, `isForSale`
-- [ ] T021 [P] Criar tipos de entidade em `server/src/domain/entities/color.ts`: `Color` com `name`, `hex`
-- [ ] T022 [P] Criar tipos de entidade em `server/src/domain/entities/material.ts`: `Material` com `name`, `type`, `brand`, `diameterMm`, `color`, `referenceCostPerKgCents`, `reorderPointGrams`
-- [ ] T023 [P] Criar tipos de entidade em `server/src/domain/entities/materialLot.ts`: `MaterialLot` com `materialId`, `supplierId`, `code`, `receivedAt`, `initialWeightG`, `currentWeightG`, `costPerGramCents`
-- [ ] T024 [P] Criar tipos de entidade em `server/src/domain/entities/stockItem.ts`: `StockItem` com `materialId`, `materialLotId`, `quantityG`, `reservedG`
-- [ ] T025 [P] Criar tipos de entidade em `server/src/domain/entities/stockMovement.ts`: `StockMovement` com `kind`, `quantityG`, `unitCost`, `stockItemId`, `materialLotId`, `productionLotId`, `printRunId`
-- [ ] T026 [P] Criar tipos de entidade em `server/src/domain/entities/file3d.ts`: `File3d` com `name`
-- [ ] T027 [P] Criar tipos de entidade em `server/src/domain/entities/fileVersion.ts`: `FileVersion` com `fileId`, `versionLabel`, `path`
-- [ ] T028 [P] Criar tipos de entidade em `server/src/domain/entities/printProfile.ts`: `PrintProfile` com `name`, `materialId`, `piecesPerPlate`, `minutesPerPlate`, `gramsPerPlate`
-- [ ] T029 [P] Criar tipos de entidade em `server/src/domain/entities/printer.ts`: `Printer` com `name`, `model`, `volume`, `hourRateCentsPerHour`, `energyPerHourWh`, `maintenanceLimitHours`, `accumulatedHours`, `preparationMinutes`, `compatibleMaterialIds`, `operationalStatus`, `isActive`
-- [ ] T030 [P] Criar tipos de entidade em `server/src/domain/entities/operator.ts`: `Operator` com `name`, `userId`
-- [ ] T031 [P] Criar tipos de entidade em `server/src/domain/entities/quote.ts`: `Quote` com `number`, `customerId`, `status`, `validUntil`, `notes`, `lines`
-- [ ] T032 [P] Criar tipos de entidade em `server/src/domain/entities/quoteLine.ts`: `QuoteLine` com `productId`, `quantity`, `unitPrice`, `materialId`
-- [ ] T033 [P] Criar tipos de entidade em `server/src/domain/entities/salesOrder.ts`: `SalesOrder` com `number`, `customerId`, `quoteId`, `commercialStatus`, `promisedDate`, `freightCents`, `packagingCents`, `lines`
-- [ ] T034 [P] Criar tipos de entidade em `server/src/domain/entities/orderLine.ts`: `OrderLine` com `productId`, `quantity`, `unitPrice`, `materialId`, `colorId`, `size`
-- [ ] T035 [P] Criar tipos de entidade em `server/src/domain/entities/productionLot.ts`: `ProductionLot` com `orderId`, `orderLineId`, `productId`, `materialId`, `qtyPlanned`, `qtyCompleted`, `status`, `plannedGrams`, `plannedMinutes`, `releasedPiecesPerPlate`, `releasedMinutesPerPlate`, `releasedGramsPerPlate`
-- [ ] T036 [P] Criar tipos de entidade em `server/src/domain/entities/reservation.ts`: `Reservation` com `productionLotId`, `stockItemId`, `grams`
-- [ ] T037 [P] Criar tipos de entidade em `server/src/domain/entities/queueItem.ts`: `QueueItem` com `productionLotId`, `printerId`, `priority`, `position`
-- [ ] T038 [P] Criar tipos de entidade em `server/src/domain/entities/printRun.ts`: `PrintRun` com `productionLotId`, `printerId`, `operatorId`, `status`, `startedAt`, `completedAt`, `pausedSeconds`, `failReason`, `actualMaterialG`, `actualMinutes`, `materialLotId`, `reprintOfPrintRunId`
-- [ ] T039 [P] Criar tipos de entidade em `server/src/domain/entities/purchaseOrder.ts`: `PurchaseOrder` com `supplierId`, `number`, `status`, `lines`
-- [ ] T040 [P] Criar tipos de entidade em `server/src/domain/entities/purchaseOrderLine.ts`: `PurchaseOrderLine` com `materialId`, `quantityKg`, `unitPrice`
-- [ ] T041 [P] Criar tipos de entidade em `server/src/domain/entities/invoice.ts`: `Invoice` com `salesOrderId`, `number`, `amountCents`, `issuedAt`, `documentReference`
-- [ ] T042 [P] Criar tipos de entidade em `server/src/domain/entities/payment.ts`: `Payment` com `salesOrderId`, `amountCents`, `method`, `paidAt`, `reference`
-- [ ] T043 [P] Criar tipos de entidade em `server/src/domain/entities/farmSettings.ts`: `FarmSettings` com `energyTariffPerKwhCents`, `calendarSummary`, `workDays`, `workStart`, `workEnd`, `timeZone`, `examplesAreFictional`
-- [ ] T044 [P] Criar tipos de entidade em `server/src/domain/entities/auditLog.ts`: `AuditLog` com `entityName`, `entityId`, `action`, `userId`, `at`, `fromStatus`, `toStatus`
+- [X] T017 [P] Criar tipos de entidade em `server/src/domain/entities/user.ts`: `User` com `email`, `name`, `role`, `passwordHash`
+- [X] T018 [P] Criar tipos de entidade em `server/src/domain/entities/customer.ts`: `Customer` com `name`, `contact`, `address`
+- [X] T019 [P] Criar tipos de entidade em `server/src/domain/entities/supplier.ts`: `Supplier` com `name`, `contact`, `paymentTerms`, `avgLeadTimeDays`
+- [X] T020 [P] Criar tipos de entidade em `server/src/domain/entities/product.ts`: `Product` com `name`, `sku`, `defaultSellPrice`, `printProfileId`, `materialId`, `fileId`, `offeredColors`, `offeredSizes`, `isForSale`
+- [X] T021 [P] Criar tipos de entidade em `server/src/domain/entities/color.ts`: `Color` com `name`, `hex`
+- [X] T022 [P] Criar tipos de entidade em `server/src/domain/entities/material.ts`: `Material` com `name`, `type`, `brand`, `diameterMm`, `color`, `referenceCostPerKgCents`, `reorderPointGrams`
+- [X] T023 [P] Criar tipos de entidade em `server/src/domain/entities/materialLot.ts`: `MaterialLot` com `materialId`, `supplierId`, `code`, `receivedAt`, `initialWeightG`, `currentWeightG`, `costPerGramCents`
+- [X] T024 [P] Criar tipos de entidade em `server/src/domain/entities/stockItem.ts`: `StockItem` com `materialId`, `materialLotId`, `quantityG`, `reservedG`
+- [X] T025 [P] Criar tipos de entidade em `server/src/domain/entities/stockMovement.ts`: `StockMovement` com `kind`, `quantityG`, `unitCost`, `stockItemId`, `materialLotId`, `productionLotId`, `printRunId`
+- [X] T026 [P] Criar tipos de entidade em `server/src/domain/entities/file3d.ts`: `File3d` com `name`
+- [X] T027 [P] Criar tipos de entidade em `server/src/domain/entities/fileVersion.ts`: `FileVersion` com `fileId`, `versionLabel`, `path`
+- [X] T028 [P] Criar tipos de entidade em `server/src/domain/entities/printProfile.ts`: `PrintProfile` com `name`, `materialId`, `piecesPerPlate`, `minutesPerPlate`, `gramsPerPlate`
+- [X] T029 [P] Criar tipos de entidade em `server/src/domain/entities/printer.ts`: `Printer` com `name`, `model`, `volume`, `hourRateCentsPerHour`, `energyPerHourWh`, `maintenanceLimitHours`, `accumulatedHours`, `preparationMinutes`, `compatibleMaterialIds`, `operationalStatus`, `isActive`
+- [X] T030 [P] Criar tipos de entidade em `server/src/domain/entities/operator.ts`: `Operator` com `name`, `userId`
+- [X] T031 [P] Criar tipos de entidade em `server/src/domain/entities/quote.ts`: `Quote` com `number`, `customerId`, `status`, `validUntil`, `notes`, `lines`
+- [X] T032 [P] Criar tipos de entidade em `server/src/domain/entities/quoteLine.ts`: `QuoteLine` com `productId`, `quantity`, `unitPrice`, `materialId`
+- [X] T033 [P] Criar tipos de entidade em `server/src/domain/entities/salesOrder.ts`: `SalesOrder` com `number`, `customerId`, `quoteId`, `commercialStatus`, `promisedDate`, `freightCents`, `packagingCents`, `lines`
+- [X] T034 [P] Criar tipos de entidade em `server/src/domain/entities/orderLine.ts`: `OrderLine` com `productId`, `quantity`, `unitPrice`, `materialId`, `colorId`, `size`
+- [X] T035 [P] Criar tipos de entidade em `server/src/domain/entities/productionLot.ts`: `ProductionLot` com `orderId`, `orderLineId`, `productId`, `materialId`, `qtyPlanned`, `qtyCompleted`, `status`, `plannedGrams`, `plannedMinutes`, `releasedPiecesPerPlate`, `releasedMinutesPerPlate`, `releasedGramsPerPlate`
+- [X] T036 [P] Criar tipos de entidade em `server/src/domain/entities/reservation.ts`: `Reservation` com `productionLotId`, `stockItemId`, `grams`
+- [X] T037 [P] Criar tipos de entidade em `server/src/domain/entities/queueItem.ts`: `QueueItem` com `productionLotId`, `printerId`, `priority`, `position`
+- [X] T038 [P] Criar tipos de entidade em `server/src/domain/entities/printRun.ts`: `PrintRun` com `productionLotId`, `printerId`, `operatorId`, `status`, `startedAt`, `completedAt`, `pausedSeconds`, `failReason`, `actualMaterialG`, `actualMinutes`, `materialLotId`, `reprintOfPrintRunId`
+- [X] T039 [P] Criar tipos de entidade em `server/src/domain/entities/purchaseOrder.ts`: `PurchaseOrder` com `supplierId`, `number`, `status`, `lines`
+- [X] T040 [P] Criar tipos de entidade em `server/src/domain/entities/purchaseOrderLine.ts`: `PurchaseOrderLine` com `materialId`, `quantityKg`, `unitPrice`
+- [X] T041 [P] Criar tipos de entidade em `server/src/domain/entities/invoice.ts`: `Invoice` com `salesOrderId`, `number`, `amountCents`, `issuedAt`, `documentReference`
+- [X] T042 [P] Criar tipos de entidade em `server/src/domain/entities/payment.ts`: `Payment` com `salesOrderId`, `amountCents`, `method`, `paidAt`, `reference`
+- [X] T043 [P] Criar tipos de entidade em `server/src/domain/entities/farmSettings.ts`: `FarmSettings` com `energyTariffPerKwhCents`, `calendarSummary`, `workDays`, `workStart`, `workEnd`, `timeZone`, `examplesAreFictional`
+- [X] T044 [P] Criar tipos de entidade em `server/src/domain/entities/auditLog.ts`: `AuditLog` com `entityName`, `entityId`, `action`, `userId`, `at`, `fromStatus`, `toStatus`
 
 ### Application Layer Foundation
 
-- [ ] T045 Criar repositórios base em `server/src/infrastructure/repositories/baseRepository.ts`: interface com `find`, `findAll`, `save`, `delete`
-- [ ] T046 Configurar gerenciamento de configuração em `server/src/infrastructure/config.ts`: leitura de `.env` com validação
-- [ ] T047 Configurar logging em `server/src/infrastructure/` — estrutura pronta para uso
+- [X] T045 Criar repositórios base em `server/src/infrastructure/repositories/baseRepository.ts`: interface com `find`, `findAll`, `save`, `delete`
+- [X] T046 Configurar gerenciamento de configuração em `server/src/infrastructure/config.ts`: leitura de `.env` com validação
+- [X] T047 Configurar logging em `server/src/infrastructure/` — estrutura pronta para uso
 
 ### API Foundation
 
-- [ ] T048 [P] Criar `server/src/api/app.ts`: construção do Fastify com `buildApp(deps)` — usado pela subida e pelos testes (research.md item 16)
-- [ ] T049 [P] Criar `server/src/api/main.ts`: entry-point que liga `app.ts` e ouve porta
-- [ ] T050 Criar middleware de autenticação em `server/src/infrastructure/auth/authMiddleware.ts`: verifica JWT, injeta `userId` e `roles` no request
-- [ ] T051 Criar padronização de erros Problem Details em `server/src/infrastructure/api/errorHandler.ts`: `application/problem+json` com `type`, `title`, `status`, `detail`, `code` (research.md item 15)
-- [ ] T052 Criar `server/src/api/routes/health.ts`: GET /api/health — sem autenticação
+- [X] T048 [P] Criar `server/src/api/app.ts`: construção do Fastify com `buildApp(deps)` — usado pela subida e pelos testes (research.md item 16)
+- [X] T049 [P] Criar `server/src/api/main.ts`: entry-point que liga `app.ts` e ouve porta
+- [X] T050 Criar middleware de autenticação em `server/src/infrastructure/auth/authMiddleware.ts`: verifica JWT, injeta `userId` e `roles` no request
+- [X] T051 Criar padronização de erros Problem Details em `server/src/infrastructure/api/errorHandler.ts`: `application/problem+json` com `type`, `title`, `status`, `detail`, `code` (research.md item 15)
+- [X] T052 Criar `server/src/api/routes/health.ts`: GET /api/health — sem autenticação
 
 ### Migration SQL Foundation
 
-- [ ] T053 Criar migração `server/migrations/0001-users.sql`: tabela `users` com `id`, `email`, `name`, `role`, `passwordHash`, `loginFailures`, `lockedUntil`
-- [ ] T054 Criar migração `server/migrations/0002-cadastros.sql`: tabelas `customers`, `suppliers`, `colors`, `materials`, `files3d`, `fileVersions`, `printProfiles`, `printers`, `operators`
-- [ ] T055 Criar migração `server/migrations/0003-commercial.sql`: tabelas `quotes`, `quoteLines`, `salesOrders`, `orderLines`
-- [ ] T056 Criar migração `server/migrations/0004-production.sql`: tabelas `productionLots`, `reservations`, `queueItems`, `printRuns`
-- [ ] T057 Criar migração `server/migrations/0005-stock.sql`: tabelas `materialLots`, `stockItems`, `stockMovements`, `purchaseOrders`, `purchaseOrderLines`
-- [ ] T058 Criar migração `server/migrations/0006-finance.sql`: tabelas `invoices`, `payments`
-- [ ] T059 Criar migração `server/migrations/0007-settings.sql`: tabela `farmSettings`
-- [ ] T060 Criar migração `server/migrations/0008-indexes.sql`: índices para consultas de dashboard e fila
-- [ ] T061 Criar migração `server/migrations/0009-audit.sql`: tabela `auditLogs`
+- [X] T053 Criar migração `server/migrations/0001-users.sql`: tabela `users` com `id`, `email`, `name`, `role`, `passwordHash`, `loginFailures`, `lockedUntil`
+- [X] T054 Criar migração `server/migrations/0002-cadastros.sql`: tabelas `customers`, `suppliers`, `colors`, `materials`, `files3d`, `fileVersions`, `printProfiles`, `printers`, `operators`
+- [X] T055 Criar migração `server/migrations/0003-commercial.sql`: tabelas `quotes`, `quoteLines`, `salesOrders`, `orderLines`
+- [X] T056 Criar migração `server/migrations/0004-production.sql`: tabelas `productionLots`, `reservations`, `queueItems`, `printRuns`
+- [X] T057 Criar migração `server/migrations/0005-stock.sql`: tabelas `materialLots`, `stockItems`, `stockMovements`, `purchaseOrders`, `purchaseOrderLines`
+- [X] T058 Criar migração `server/migrations/0006-finance.sql`: tabelas `invoices`, `payments`
+- [X] T059 Criar migração `server/migrations/0007-settings.sql`: tabela `farmSettings`
+- [X] T060 Criar migração `server/migrations/0008-indexes.sql`: índices para consultas de dashboard e fila
+- [X] T061 Criar migração `server/migrations/0009-audit.sql`: tabela `auditLogs`
 
 **Checkpoint**: Foundation ready — user story implementation can now begin in parallel
 
@@ -164,21 +130,21 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 **Goal**: Identificar pessoas por e-mail e senha, e restringir cada ação a papéis: Admin, Vendas, Produção, Compras, Operador.
 
-<<<<<<< HEAD
+
 **Independent Test**: Login com credenciais corretas retorna token JWT. Usuário sem sessão recebe 401. Usuário com papel inadequado recebe 403 em rota protegida.
 
 ### Implementation for User Story 1
 
-- [ ] T062 [P] [US1] Implementar regra de travamento em `server/src/domain/rules/auth/rateLimit.ts`: 5 falhas seguidas → travar por 5 min; regra completa: research.md item 4
-- [ ] T063 [P] [US1] Implementar hash irreversível de senha em `server/src/infrastructure/auth/hash.ts`: scrypt, conforme princípio VII da constituição
-- [ ] T064 [P] [US1] Implementar geração/validação de JWT em `server/src/infrastructure/auth/jwt.ts`: HS256, validade 8 horas
-- [ ] T065 [US1] Implementar uso-caso de login em `server/src/application/use-cases/auth/login.ts`: POST /api/auth/login
-- [ ] T066 [US1] Implementar rota de login em `server/src/api/routes/auth/login.ts`: POST /api/auth/login, 200, 401
-- [ ] T067 [US1] Implementar uso-caso de criar usuário em `server/src/application/use-cases/users/createUser.ts`: POST /api/users
-- [ ] T068 [US1] Implementar rota de criar usuário em `server/src/api/routes/users/create.ts`: POST /api/users, 201, 400, 403
-- [ ] T069 [US1] Implementar uso-caso de listar usuários em `server/src/application/use-cases/users/listUsers.ts`: GET /api/users
-- [ ] T070 [US1] Implementar rota de listar usuários em `server/src/api/routes/users/list.ts`: GET /api/users, 200, 403
-=======
+- [X] T062 [P] [US1] Implementar regra de travamento em `server/src/domain/rules/auth/rateLimit.ts`: 5 falhas seguidas → travar por 5 min; regra completa: research.md item 4
+- [X] T063 [P] [US1] Implementar hash irreversível de senha em `server/src/infrastructure/auth/hash.ts`: scrypt, conforme princípio VII da constituição
+- [X] T064 [P] [US1] Implementar geração/validação de JWT em `server/src/infrastructure/auth/jwt.ts`: HS256, validade 8 horas
+- [X] T065 [US1] Implementar uso-caso de login em `server/src/application/use-cases/auth/login.ts`: POST /api/auth/login
+- [X] T066 [US1] Implementar rota de login em `server/src/api/routes/auth/login.ts`: POST /api/auth/login, 200, 401
+- [X] T067 [US1] Implementar uso-caso de criar usuário em `server/src/application/use-cases/users/createUser.ts`: POST /api/users
+- [X] T068 [US1] Implementar rota de criar usuário em `server/src/api/routes/users/create.ts`: POST /api/users, 201, 400, 403
+- [X] T069 [US1] Implementar uso-caso de listar usuários em `server/src/application/use-cases/users/listUsers.ts`: GET /api/users
+- [X] T070 [US1] Implementar rota de listar usuários em `server/src/api/routes/users/list.ts`: GET /api/users, 200, 403
+
 **Independent Test**: Seção 1 de `specs/001-reimplementar-printfarm/quickstart.md`
 
 ### Tests for User Story 1
@@ -204,7 +170,7 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 - [X] T029 [US1] Rotas em `routes/lots.ts`, `routes/sales-orders.ts` (leitura) e `routes/cadastros/printers.ts` (leitura)
 - [X] T030 [US1] `seed/demo-seed.ts`, com os dados fictícios da seção 1 do quickstart
 - [X] T031 [US1] `web/src/pages/PedidoPage.vue` e `FilaPage.vue`
->>>>>>> 294e3bf (Newreports for smaller models)
+
 
 ### Ajustes da US1 pelas clarificações de 2026-11-17
 
@@ -220,15 +186,15 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ### Implementation for User Story 1
 
-- [ ] T062 [P] [US1] Implementar regra de travamento em `server/src/domain/rules/auth/rateLimit.ts`: 5 falhas seguidas → travar por 5 min; regra completa: research.md item 4
-- [ ] T063 [P] [US1] Implementar hash irreversível de senha em `server/src/infrastructure/auth/hash.ts`: scrypt, conforme princípio VII da constituição
-- [ ] T064 [P] [US1] Implementar geração/validação de JWT em `server/src/infrastructure/auth/jwt.ts`: HS256, validade 8 horas
-- [ ] T065 [US1] Implementar uso-caso de login em `server/src/application/use-cases/auth/login.ts`: POST /api/auth/login
-- [ ] T066 [US1] Implementar rota de login em `server/src/api/routes/auth/login.ts`: POST /api/auth/login, 200, 401
-- [ ] T067 [US1] Implementar uso-caso de criar usuário em `server/src/application/use-cases/users/createUser.ts`: POST /api/users
-- [ ] T068 [US1] Implementar rota de criar usuário em `server/src/api/routes/users/create.ts`: POST /api/users, 201, 400, 403
-- [ ] T069 [US1] Implementar uso-caso de listar usuários em `server/src/application/use-cases/users/listUsers.ts`: GET /api/users
-- [ ] T070 [US1] Implementar rota de listar usuários em `server/src/api/routes/users/list.ts`: GET /api/users, 200, 403
+- [X] T062 [P] [US1] Implementar regra de travamento em `server/src/domain/rules/auth/rateLimit.ts`: 5 falhas seguidas → travar por 5 min; regra completa: research.md item 4
+- [X] T063 [P] [US1] Implementar hash irreversível de senha em `server/src/infrastructure/auth/hash.ts`: scrypt, conforme princípio VII da constituição
+- [X] T064 [P] [US1] Implementar geração/validação de JWT em `server/src/infrastructure/auth/jwt.ts`: HS256, validade 8 horas
+- [X] T065 [US1] Implementar uso-caso de login em `server/src/application/use-cases/auth/login.ts`: POST /api/auth/login
+- [X] T066 [US1] Implementar rota de login em `server/src/api/routes/auth/login.ts`: POST /api/auth/login, 200, 401
+- [X] T067 [US1] Implementar uso-caso de criar usuário em `server/src/application/use-cases/users/createUser.ts`: POST /api/users
+- [X] T068 [US1] Implementar rota de criar usuário em `server/src/api/routes/users/create.ts`: POST /api/users, 201, 400, 403
+- [X] T069 [US1] Implementar uso-caso de listar usuários em `server/src/application/use-cases/users/listUsers.ts`: GET /api/users
+- [X] T070 [US1] Implementar rota de listar usuários em `server/src/api/routes/users/list.ts`: GET /api/users, 200, 403
 
 **Checkpoint**: User Story 1 funcional — autenticação e controle de acesso funcionam independentemente
 
@@ -242,22 +208,22 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ### Implementation for User Story 2
 
-- [ ] T071 [P] [US2] Regra de validação de print profile em `server/src/domain/rules/printProfile/validate.ts`: peças, minutos e gramas por prancha > 0 (FR-011)
-- [ ] T072 [P] [US2] Regra de validação de printer em `server/src/domain/rules/printer/validate.ts`: limite de manutenção > 0; `hourRateExcludesFilamentAndEnergy` sempre true (cadastros.md)
-- [ ] T073 [P] [US2] Regra de validação de product em `server/src/domain/rules/product/validate.ts`: `defaultSellPrice` ≥ 0; `offeredColors` e `offeredSizes` são listas; `isForSale` bool (cadastros.md)
-- [ ] T074 [P] [US2] Regra de validação de color em `server/src/domain/rules/color/validate.ts`: `hex` vazio ou `#RRGGBB` (cadastros.md)
-- [ ] T075 [P] [US2] Regra de validação de material em `server/src/domain/rules/material/validate.ts`: `reorderPointGrams` nulo ou ≥ 0 (cadastros.md)
-- [ ] T076 [P] [US2] Implementar CRUD de Customer em `server/src/application/use-cases/customers/` + rota em `server/src/api/routes/customers.ts`
-- [ ] T077 [P] [US2] Implementar CRUD de Supplier em `server/src/application/use-cases/suppliers/` + rota em `server/src/api/routes/suppliers.ts`
-- [ ] T078 [P] [US2] Implementar CRUD de Color em `server/src/application/use-cases/colors/` + rota em `server/src/api/routes/colors.ts`
-- [ ] T079 [P] [US2] Implementar CRUD de Material em `server/src/application/use-cases/materials/` + rota em `server/src/api/routes/materials.ts`
-- [ ] T080 [P] [US2] Implementar CRUD de File3d + versionamento em `server/src/application/use-cases/files3d/` + rota em `server/src/api/routes/files3d.ts` (multipart)
-- [ ] T081 [P] [US2] Implementar CRUD de PrintProfile em `server/src/application/use-cases/printProfiles/` + rota em `server/src/api/routes/printProfiles.ts` (educação válida não altera lotes existentes)
-- [ ] T082 [P] [US2] Implementar CRUD de Product em `server/src/application/use-cases/products/` + rota em `server/src/api/routes/products.ts`
-- [ ] T083 [US2] Implementar uso-caso de atribuir materiais compatíveis em `server/src/application/use-cases/printers/assignMaterials.ts`
-- [ ] T084 [US2] Implementar rota de atribuir materiais em `server/src/api/routes/printers/assignMaterials.ts`: POST /api/printers/{id}/materials
-- [ ] T085 [P] [US2] Implementar CRUD de Printer em `server/src/application/use-cases/printers/` + rota em `server/src/api/routes/printers.ts`
-- [ ] T086 [P] [US2] Implementar CRUD de Operator em `server/src/application/use-cases/operators/` + rota em `server/src/api/routes/operators.ts`
+- [X] T071 [P] [US2] Regra de validação de print profile em `server/src/domain/rules/printProfile/validate.ts`: peças, minutos e gramas por prancha > 0 (FR-011)
+- [X] T072 [P] [US2] Regra de validação de printer em `server/src/domain/rules/printer/validate.ts`: limite de manutenção > 0; `hourRateExcludesFilamentAndEnergy` sempre true (cadastros.md)
+- [X] T073 [P] [US2] Regra de validação de product em `server/src/domain/rules/product/validate.ts`: `defaultSellPrice` ≥ 0; `offeredColors` e `offeredSizes` são listas; `isForSale` bool (cadastros.md)
+- [X] T074 [P] [US2] Regra de validação de color em `server/src/domain/rules/color/validate.ts`: `hex` vazio ou `#RRGGBB` (cadastros.md)
+- [X] T075 [P] [US2] Regra de validação de material em `server/src/domain/rules/material/validate.ts`: `reorderPointGrams` nulo ou ≥ 0 (cadastros.md)
+- [X] T076 [P] [US2] Implementar CRUD de Customer em `server/src/application/use-cases/customers/` + rota em `server/src/api/routes/customers.ts`
+- [X] T077 [P] [US2] Implementar CRUD de Supplier em `server/src/application/use-cases/suppliers/` + rota em `server/src/api/routes/suppliers.ts`
+- [X] T078 [P] [US2] Implementar CRUD de Color em `server/src/application/use-cases/colors/` + rota em `server/src/api/routes/colors.ts`
+- [X] T079 [P] [US2] Implementar CRUD de Material em `server/src/application/use-cases/materials/` + rota em `server/src/api/routes/materials.ts`
+- [X] T080 [P] [US2] Implementar CRUD de File3d + versionamento em `server/src/application/use-cases/files3d/` + rota em `server/src/api/routes/files3d.ts` (multipart)
+- [X] T081 [P] [US2] Implementar CRUD de PrintProfile em `server/src/application/use-cases/printProfiles/` + rota em `server/src/api/routes/printProfiles.ts` (educação válida não altera lotes existentes)
+- [X] T082 [P] [US2] Implementar CRUD de Product em `server/src/application/use-cases/products/` + rota em `server/src/api/routes/products.ts`
+- [X] T083 [US2] Implementar uso-caso de atribuir materiais compatíveis em `server/src/application/use-cases/printers/assignMaterials.ts`
+- [X] T084 [US2] Implementar rota de atribuir materiais em `server/src/api/routes/printers/assignMaterials.ts`: POST /api/printers/{id}/materials
+- [X] T085 [P] [US2] Implementar CRUD de Printer em `server/src/application/use-cases/printers/` + rota em `server/src/api/routes/printers.ts`
+- [X] T086 [P] [US2] Implementar CRUD de Operator em `server/src/application/use-cases/operators/` + rota em `server/src/api/routes/operators.ts`
 
 **Checkpoint**: User Story 2 funcional — todos os cadastros operam independentemente
 
@@ -271,14 +237,14 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ### Implementation for User Story 3
 
-- [ ] T087 [P] [US3] Regra de transição de orçamento em `server/src/domain/rules/quote/transitions.ts`: Draft → Sent, Draft/Sent → Approved, qualquer não-rejeitado → Rejected (comercial.md)
-- [ ] T088 [P] [US3] Regra de geração de pedido em `server/src/domain/rules/quote/generateOrder.ts`: orçamento aprovado e não vencido, data prometida obrigatória, um único pedido por orçamento
-- [ ] T089 [P] [US3] Regra de transição de pedido em `server/src/domain/rules/salesOrder/transitions.ts`: QuotePending → Approved/Cancelled; Cancelled imutável (comercial.md)
-- [ ] T090 [P] [US3] Regra de cancelamento de pedido em `server/src/domain/rules/salesOrder/cancelOrder.ts`: sem execução iniciada, sem fatura, sem pagamento; cancela lotes, fila, libera reservas uma única vez (FR-009, comercial.md)
-- [ ] T091 [US3] Implementar uso-cases de Quote em `server/src/application/use-cases/quotes/`: criar, enviar, aprovar, rejeitar, listar
-- [ ] T092 [US3] Implementar rotas de Quote em `server/src/api/routes/quotes.ts`: POST /api/quotes, POST /api/quotes/{id}/send, POST /api/quotes/{id}/approve, POST /api/quotes/{id}/reject, GET /api/quotes, GET /api/quotes/{id}
-- [ ] T093 [US3] Implementar uso-cases de SalesOrder em `server/src/application/use-cases/salesOrders/`: criar manualmente, de orçamento, listar, detalhar, PATCH status
-- [ ] T094 [US3] Implementar rotas de SalesOrder em `server/src/api/routes/salesOrders.ts`: POST /api/sales-orders, POST /api/sales-orders/from-quote/{quoteId}, GET /api/sales-orders, GET /api/sales-orders/{id}, PATCH /api/sales-orders/{id}/status
+- [X] T087 [P] [US3] Regra de transição de orçamento em `server/src/domain/rules/quote/transitions.ts`: Draft → Sent, Draft/Sent → Approved, qualquer não-rejeitado → Rejected (comercial.md)
+- [X] T088 [P] [US3] Regra de geração de pedido em `server/src/domain/rules/quote/generateOrder.ts`: orçamento aprovado e não vencido, data prometida obrigatória, um único pedido por orçamento
+- [X] T089 [P] [US3] Regra de transição de pedido em `server/src/domain/rules/salesOrder/transitions.ts`: QuotePending → Approved/Cancelled; Cancelled imutável (comercial.md)
+- [X] T090 [P] [US3] Regra de cancelamento de pedido em `server/src/domain/rules/salesOrder/cancelOrder.ts`: sem execução iniciada, sem fatura, sem pagamento; cancela lotes, fila, libera reservas uma única vez (FR-009, comercial.md)
+- [X] T091 [US3] Implementar uso-cases de Quote em `server/src/application/use-cases/quotes/`: criar, enviar, aprovar, rejeitar, listar
+- [X] T092 [US3] Implementar rotas de Quote em `server/src/api/routes/quotes.ts`: POST /api/quotes, POST /api/quotes/{id}/send, POST /api/quotes/{id}/approve, POST /api/quotes/{id}/reject, GET /api/quotes, GET /api/quotes/{id}
+- [X] T093 [US3] Implementar uso-cases de SalesOrder em `server/src/application/use-cases/salesOrders/`: criar manualmente, de orçamento, listar, detalhar, PATCH status
+- [X] T094 [US3] Implementar rotas de SalesOrder em `server/src/api/routes/salesOrders.ts`: POST /api/sales-orders, POST /api/sales-orders/from-quote/{quoteId}, GET /api/sales-orders, GET /api/sales-orders/{id}, PATCH /api/sales-orders/{id}/status
 
 **Checkpoint**: User Story 3 funcional — orçamento e pedido operam independentemente
 
@@ -292,14 +258,14 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ### Implementation for User Story 4
 
-- [ ] T095 [P] [US4] Regra de recebimento em `server/src/domain/rules/purchaseOrder/receive.ts`: peso > 0, FIFO para saldo, estados Draft/Sent → PartiallyReceived → Received (estoque-compras.md)
-- [ ] T096 [P] [US4] Regra de saldo e reserva em `server/src/domain/rules/stock/reserve.ts`: saldo insuficiente recusa inteira, sem reserva parcial (FR-012)
-- [ ] T097 [P] [US4] Regra de exclusão atômica de estoque em `server/src/domain/rules/stock/atomicUpdate.ts`: quantityG, CurrentWeightG, ReservedG, reservas e movimentações na mesma transação (estoque-compras.md)
-- [ ] T098 [P] [US4] Regra de sugestão de recompra em `server/src/domain/rules/stock/restockSuggestion.ts`: saldo livre < reorderPoint (FR-020)
-- [ ] T099 [US4] Implementar uso-cases de PurchaseOrder em `server/src/application/use-cases/purchaseOrders/`: criar, enviar, receber, cancelar, listar
-- [ ] T100 [US4] Implementar rotas de PurchaseOrder em `server/src/api/routes/purchaseOrders.ts`: POST /api/purchase-orders, POST /api/purchase-orders/{id}/send, POST /api/purchase-orders/{id}/receipts, POST /api/purchase-orders/{id}/cancel
-- [ ] T101 [P] [US4] Implementar uso-cases de Stock em `server/src/application/use-cases/stock/`: listar saldo, listar movimentações
-- [ ] T102 [US4] Implementar rotas de Stock em `server/src/api/routes/stock.ts`: GET /api/stock, GET /api/stock/movements
+- [X] T095 [P] [US4] Regra de recebimento em `server/src/domain/rules/purchaseOrder/receive.ts`: peso > 0, FIFO para saldo, estados Draft/Sent → PartiallyReceived → Received (estoque-compras.md)
+- [X] T096 [P] [US4] Regra de saldo e reserva em `server/src/domain/rules/stock/reserve.ts`: saldo insuficiente recusa inteira, sem reserva parcial (FR-012)
+- [X] T097 [P] [US4] Regra de exclusão atômica de estoque em `server/src/domain/rules/stock/atomicUpdate.ts`: quantityG, CurrentWeightG, ReservedG, reservas e movimentações na mesma transação (estoque-compras.md)
+- [X] T098 [P] [US4] Regra de sugestão de recompra em `server/src/domain/rules/stock/restockSuggestion.ts`: saldo livre < reorderPoint (FR-020)
+- [X] T099 [US4] Implementar uso-cases de PurchaseOrder em `server/src/application/use-cases/purchaseOrders/`: criar, enviar, receber, cancelar, listar
+- [X] T100 [US4] Implementar rotas de PurchaseOrder em `server/src/api/routes/purchaseOrders.ts`: POST /api/purchase-orders, POST /api/purchase-orders/{id}/send, POST /api/purchase-orders/{id}/receipts, POST /api/purchase-orders/{id}/cancel
+- [X] T101 [P] [US4] Implementar uso-cases de Stock em `server/src/application/use-cases/stock/`: listar saldo, listar movimentações
+- [X] T102 [US4] Implementar rotas de Stock em `server/src/api/routes/stock.ts`: GET /api/stock, GET /api/stock/movements
 
 **Checkpoint**: User Story 4 funcional — estoque e compras operam independentemente
 
@@ -313,22 +279,22 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ### Implementation for User Story 5
 
-- [ ] T103 [P] [US5] Regra de liberação de lotes em `server/src/domain/rules/production/releaseLots.ts`: corte por prancha, campos released* preservados, reserva atômica FIFO, recusa se linha já liberada (FR-011, FR-012)
-- [ ] T104 [P] [US5] Regra de enfileiramento em `server/src/domain/rules/production/queue.ts`: impressora disponível, ativa, compatível, não ocupada (FR-013, producao.md)
-- [ ] T105 [P] [US5] Regra de início de execução em `server/src/domain/rules/production/startRun.ts`: validar pedido não cancelado, lote Queued, máquina Available; complementar reserva de reimpressão FIFO; remover da fila ativa (FR-013, FR-018, producao.md)
-- [ ] T106 [P] [US5] Regra de pausa e retomo em `server/src/domain/rules/production/pauseResume.ts`: Running ↔ Paused, acumula pausedSeconds
-- [ ] T107 [P] [US5] Regra de conclusão de execução em `server/src/domain/rules/production/completeRun.ts`: consumo real via reserva + saldo livre FIFO, única baixa ProductionOut, lote AwaitingPickup, impressora AwaitingPickup (FR-017, FR-024)
-- [ ] T108 [P] [US5] Regra de falha de execução em `server/src/domain/rules/production/failRun.ts`: material gasto obrigatório ≥ 0, consumo segue FR-017, Waste em vez de ProductionOut, reimpressão com complemento reserva FIFO (FR-018, producao.md)
-- [ ] T109 [P] [US5] Regra de retirada em `server/src/domain/rules/printer/pickup.ts`: AwaitingPickup → Preparing; lote vai a Completed se execução Completed; permanece Failed se falha sem reimpressão (FR-015, producao.md)
-- [ ] T110 [P] [US5] Regra de preparação concluída em `server/src/domain/rules/printer/preparationComplete.ts`: Available se horas < limite; InMaintenance se ≥ limite (producao.md)
-- [ ] T111 [P] [US5] Regra de manutenção concluída em `server/src/domain/rules/printer/maintenanceComplete.ts`: zera horas, vai a Available se sem bloqueio (producao.md)
-- [ ] T112 [P] [US5] Regra de status do pedido por produção em `server/src/domain/rules/salesOrder/productionStatus.ts`: InProduction, AwaitingFinishing, ReadyToShip baseados em estados dos lotes (comercial.md)
-- [ ] T113 [US5] Implementar uso-cases de Production em `server/src/application/use-cases/production/`: release, queue, startRun, pause, resume, complete, fail, cancelLot
-- [ ] T114 [US5] Implementar rotas de Production em `server/src/api/routes/production.ts`: POST /api/sales-orders/{id}/lots/release, GET /api/lots, POST /api/lots/{id}/queue, POST /api/lots/{id}/runs, POST /api/lots/{id}/cancel
-- [ ] T115 [US5] Implementar uso-cases de PrintRun em `server/src/application/use-cases/printRuns/`: pause, resume, complete, fail
-- [ ] T116 [US5] Implementar rotas de PrintRun em `server/src/api/routes/printRuns.ts`: POST /api/runs/{id}/pause, /resume, /complete, /fail
-- [ ] T117 [US5] Implementar uso-cases de Printer em `server/src/application/use-cases/printers/`: pickup, preparation-complete, maintenance-complete
-- [ ] T118 [US5] Implementar rotas de Printer em `server/src/api/routes/printers/lifecycle.ts`: POST /api/printers/{id}/pickup, /preparation-complete, /maintenance-complete
+- [X] T103 [P] [US5] Regra de liberação de lotes em `server/src/domain/rules/production/releaseLots.ts`: corte por prancha, campos released* preservados, reserva atômica FIFO, recusa se linha já liberada (FR-011, FR-012)
+- [X] T104 [P] [US5] Regra de enfileiramento em `server/src/domain/rules/production/queue.ts`: impressora disponível, ativa, compatível, não ocupada (FR-013, producao.md)
+- [X] T105 [P] [US5] Regra de início de execução em `server/src/domain/rules/production/startRun.ts`: validar pedido não cancelado, lote Queued, máquina Available; complementar reserva de reimpressão FIFO; remover da fila ativa (FR-013, FR-018, producao.md)
+- [X] T106 [P] [US5] Regra de pausa e retomo em `server/src/domain/rules/production/pauseResume.ts`: Running ↔ Paused, acumula pausedSeconds
+- [X] T107 [P] [US5] Regra de conclusão de execução em `server/src/domain/rules/production/completeRun.ts`: consumo real via reserva + saldo livre FIFO, única baixa ProductionOut, lote AwaitingPickup, impressora AwaitingPickup (FR-017, FR-024)
+- [X] T108 [P] [US5] Regra de falha de execução em `server/src/domain/rules/production/failRun.ts`: material gasto obrigatório ≥ 0, consumo segue FR-017, Waste em vez de ProductionOut, reimpressão com complemento reserva FIFO (FR-018, producao.md)
+- [X] T109 [P] [US5] Regra de retirada em `server/src/domain/rules/printer/pickup.ts`: AwaitingPickup → Preparing; lote vai a Completed se execução Completed; permanece Failed se falha sem reimpressão (FR-015, producao.md)
+- [X] T110 [P] [US5] Regra de preparação concluída em `server/src/domain/rules/printer/preparationComplete.ts`: Available se horas < limite; InMaintenance se ≥ limite (producao.md)
+- [X] T111 [P] [US5] Regra de manutenção concluída em `server/src/domain/rules/printer/maintenanceComplete.ts`: zera horas, vai a Available se sem bloqueio (producao.md)
+- [X] T112 [P] [US5] Regra de status do pedido por produção em `server/src/domain/rules/salesOrder/productionStatus.ts`: InProduction, AwaitingFinishing, ReadyToShip baseados em estados dos lotes (comercial.md)
+- [X] T113 [US5] Implementar uso-cases de Production em `server/src/application/use-cases/production/`: release, queue, startRun, pause, resume, complete, fail, cancelLot
+- [X] T114 [US5] Implementar rotas de Production em `server/src/api/routes/production.ts`: POST /api/sales-orders/{id}/lots/release, GET /api/lots, POST /api/lots/{id}/queue, POST /api/lots/{id}/runs, POST /api/lots/{id}/cancel
+- [X] T115 [US5] Implementar uso-cases de PrintRun em `server/src/application/use-cases/printRuns/`: pause, resume, complete, fail
+- [X] T116 [US5] Implementar rotas de PrintRun em `server/src/api/routes/printRuns.ts`: POST /api/runs/{id}/pause, /resume, /complete, /fail
+- [X] T117 [US5] Implementar uso-cases de Printer em `server/src/application/use-cases/printers/`: pickup, preparation-complete, maintenance-complete
+- [X] T118 [US5] Implementar rotas de Printer em `server/src/api/routes/printers/lifecycle.ts`: POST /api/printers/{id}/pickup, /preparation-complete, /maintenance-complete
 
 **Checkpoint**: User Story 5 funcional — produção e fila operam independentemente
 
@@ -342,10 +308,10 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ### Implementation for User Story 6
 
-- [ ] T119 [P] [US6] Regra de criação de fatura em `server/src/domain/rules/finance/createInvoice.ts`: pedido não QuotePending nem Cancelled (financeiro.md)
-- [ ] T120 [P] [US6] Regra de criação de pagamento em `server/src/domain/rules/finance/createPayment.ts`: mesmo filtro de fatura, method na lista fechada (financeiro.md)
-- [ ] T121 [US6] Implementar uso-cases de Finance em `server/src/application/use-cases/finance/`: createInvoice, createPayment, listInvoices, listPayments
-- [ ] T122 [US6] Implementar rotas de Finance em `server/src/api/routes/finance.ts`: POST /api/sales-orders/{id}/invoices, GET /api/sales-orders/{id}/invoices, POST /api/sales-orders/{id}/payments, GET /api/sales-orders/{id}/payments
+- [X] T119 [P] [US6] Regra de criação de fatura em `server/src/domain/rules/finance/createInvoice.ts`: pedido não QuotePending nem Cancelled (financeiro.md)
+- [X] T120 [P] [US6] Regra de criação de pagamento em `server/src/domain/rules/finance/createPayment.ts`: mesmo filtro de fatura, method na lista fechada (financeiro.md)
+- [X] T121 [US6] Implementar uso-cases de Finance em `server/src/application/use-cases/finance/`: createInvoice, createPayment, listInvoices, listPayments
+- [X] T122 [US6] Implementar rotas de Finance em `server/src/api/routes/finance.ts`: POST /api/sales-orders/{id}/invoices, GET /api/sales-orders/{id}/invoices, POST /api/sales-orders/{id}/payments, GET /api/sales-orders/{id}/payments
 
 **Checkpoint**: User Story 6 funcional — financeiro opera independentemente
 
@@ -359,14 +325,14 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ### Implementation for User Story 7
 
-- [ ] T123 [P] [US7] Regra de custo estimado em `server/src/domain/rules/costEstimate/calculate.ts`: filamento + energia + hora-máquina; total `null` se qualquer premissa faltante (FR-023, painel.md)
-- [ ] T124 [P] [US7] Regra de cálculo de backlog em `server/src/domain/rules/backlog/calculate.ts`: horas pendentes distribuídas em paralelo no calendário, respeitando compatibilidade (painel.md)
-- [ ] T125 [P] [US7] Regra de consumo dos últimos 7 dias em `server/src/domain/rules/dashboard/consumption.ts`: soma ProductionOut + Waste, uma única vez por detalhe de printRunId (FR-022)
-- [ ] T126 [P] [US7] Regra de validação de farm settings em `server/src/domain/rules/settings/validate.ts`: `energyTariffPerKwhCents` nulo ou ≥ 0; `workDays` 1-7; `timeZone` IANA; `examplesAreFictional` não false nesta feature (painel.md)
-- [ ] T127 [US7] Implementar uso-cases de Dashboard em `server/src/application/use-cases/dashboard/`: overview, backlog, restockSuggestions, costEstimate
-- [ ] T128 [US7] Implementar rotas de Dashboard em `server/src/api/routes/dashboard.ts`: GET /api/dashboard, GET /api/dashboard/backlog, GET /api/dashboard/restock-suggestions, GET /api/lots/{id}/cost-estimate
-- [ ] T129 [US7] Implementar uso-case de farm settings em `server/src/application/use-cases/settings/update.ts`: PUT /api/settings
-- [ ] T130 [US7] Implementar rota de farm settings em `server/src/api/routes/settings.ts`: PUT /api/settings
+- [X] T123 [P] [US7] Regra de custo estimado em `server/src/domain/rules/costEstimate/calculate.ts`: filamento + energia + hora-máquina; total `null` se qualquer premissa faltante (FR-023, painel.md)
+- [X] T124 [P] [US7] Regra de cálculo de backlog em `server/src/domain/rules/backlog/calculate.ts`: horas pendentes distribuídas em paralelo no calendário, respeitando compatibilidade (painel.md)
+- [X] T125 [P] [US7] Regra de consumo dos últimos 7 dias em `server/src/domain/rules/dashboard/consumption.ts`: soma ProductionOut + Waste, uma única vez por detalhe de printRunId (FR-022)
+- [X] T126 [P] [US7] Regra de validação de farm settings em `server/src/domain/rules/settings/validate.ts`: `energyTariffPerKwhCents` nulo ou ≥ 0; `workDays` 1-7; `timeZone` IANA; `examplesAreFictional` não false nesta feature (painel.md)
+- [X] T127 [US7] Implementar uso-cases de Dashboard em `server/src/application/use-cases/dashboard/`: overview, backlog, restockSuggestions, costEstimate
+- [X] T128 [US7] Implementar rotas de Dashboard em `server/src/api/routes/dashboard.ts`: GET /api/dashboard, GET /api/dashboard/backlog, GET /api/dashboard/restock-suggestions, GET /api/lots/{id}/cost-estimate
+- [X] T129 [US7] Implementar uso-case de farm settings em `server/src/application/use-cases/settings/update.ts`: PUT /api/settings
+- [X] T130 [US7] Implementar rota de farm settings em `server/src/api/routes/settings.ts`: PUT /api/settings
 
 **Checkpoint**: User Story 7 funcional — painel e parâmetros operam independentemente
 
@@ -380,17 +346,17 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ### Implementation for User Story 8
 
-- [ ] T131 [P] [US8] Regra de registro de trilha em `server/src/domain/rules/audit/writeTrail.ts`: entidade, ação, usuário, momento, estado anterior, estado novo (FR-024)
-- [ ] T132 [US8] Implementar uso-case de leitura de audit log em `server/src/application/use-cases/audit/getAuditTrail.ts`: GET /api/audit?entity=&id=
-- [ ] T133 [US8] Implementar rota de audit log em `server/src/api/routes/audit.ts`: GET /api/audit, 403 para demais papéis
+- [X] T131 [P] [US8] Regra de registro de trilha em `server/src/domain/rules/audit/writeTrail.ts`: entidade, ação, usuário, momento, estado anterior, estado novo (FR-024)
+- [X] T132 [US8] Implementar uso-case de leitura de audit log em `server/src/application/use-cases/audit/getAuditTrail.ts`: GET /api/audit?entity=&id=
+- [X] T133 [US8] Implementar rota de audit log em `server/src/api/routes/audit.ts`: GET /api/audit, 403 para demais papéis
 
 ### Cross-cutting audit wiring
 
-- [ ] T134 [US8] Injetar middleware de auditoria em transições de Quote (US3)
-- [ ] T135 [US8] Injetar middleware de auditoria em transições de SalesOrder (US3)
-- [ ] T136 [US8] Injetar middleware de auditoria em transições de ProductionLot (US5)
-- [ ] T137 [US8] Injetar middleware de auditoria em transições de Printer (US5)
-- [ ] T138 [US8] Injetar middleware de auditoria em StockMovements (US4)
+- [X] T134 [US8] Injetar middleware de auditoria em transições de Quote (US3)
+- [X] T135 [US8] Injetar middleware de auditoria em transições de SalesOrder (US3)
+- [X] T136 [US8] Injetar middleware de auditoria em transições de ProductionLot (US5)
+- [X] T137 [US8] Injetar middleware de auditoria em transições de Printer (US5)
+- [X] T138 [US8] Injetar middleware de auditoria em StockMovements (US4)
 
 **Checkpoint**: User Story 8 funcional — trilha registra mudanças independentemente
 
@@ -400,18 +366,18 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T139 [P] Implementar seed de dados de desenvolvimento em `server/src/infrastructure/seed/`: admin, sales, production, purchasing, operator
-- [ ] T140 [P] Implementar job de expiração de orçamento em `server/src/infrastructure/jobs/expireQuotes.ts`: FR-007, processamento periódico
-- [ ] T141 [P] Implementar job de sugestão de recompra em `server/src/infrastructure/jobs/restockSuggestions.ts`: FR-020
-- [ ] T142 [P] Tests de arquitetura em `server/tests/architecture/`: verificar que `domain/` não importa de fora (princípio I)
-- [ ] T143 [P] Tests de domínio em `server/tests/domain/`: cada regra de domínio com teste que falha antes da implementação (princípio II)
-- [ ] T144 [P] Tests de aplicação em `server/tests/application/`: orquestração transacional por use-case
-- [ ] T145 [P] Tests de infraestrutura em `server/tests/infrastructure/`: banco real SQLite, rollback, disputa por saldo (research.md item 13)
-- [ ] T146 [P] Tests de API em `server/tests/api/`: contratos de cada rota, 401, 403, 409 com códigos estáveis
-- [ ] T147 [P] Teste vermelho para cada regra de domínio antes de implementá-la (princípio II)
-- [ ] T148 [P] Rota guard de SPA em `web/src/router/guards.ts`: autenticação e papel
-- [ ] T149 Executar `quickstart.md` validation — todos os roteiros passam
-- [ ] T150 Run `npm run typecheck` e `npm test` suíte inteira verde antes de fechar a feature
+- [X] T139 [P] Implementar seed de dados de desenvolvimento em `server/src/infrastructure/seed/`: admin, sales, production, purchasing, operator
+- [X] T140 [P] Implementar job de expiração de orçamento em `server/src/infrastructure/jobs/expireQuotes.ts`: FR-007, processamento periódico
+- [X] T141 [P] Implementar job de sugestão de recompra em `server/src/infrastructure/jobs/restockSuggestions.ts`: FR-020
+- [X] T142 [P] Tests de arquitetura em `server/tests/architecture/`: verificar que `domain/` não importa de fora (princípio I)
+- [X] T143 [P] Tests de domínio em `server/tests/domain/`: cada regra de domínio com teste que falha antes da implementação (princípio II)
+- [X] T144 [P] Tests de aplicação em `server/tests/application/`: orquestração transacional por use-case
+- [X] T145 [P] Tests de infraestrutura em `server/tests/infrastructure/`: banco real SQLite, rollback, disputa por saldo (research.md item 13)
+- [X] T146 [P] Tests de API em `server/tests/api/`: contratos de cada rota, 401, 403, 409 com códigos estáveis
+- [X] T147 [P] Teste vermelho para cada regra de domínio antes de implementá-la (princípio II)
+- [X] T148 [P] Rota guard de SPA em `web/src/router/guards.ts`: autenticação e papel
+- [X] T149 Executar `quickstart.md` validation — todos os roteiros passam
+- [X] T150 Run `npm run typecheck` e `npm test` suíte inteira verde antes de fechar a feature
 
 ---
 
@@ -464,11 +430,7 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 - **US6**: T119–T120 (regras) → T121–T122 (use-cases + rotas)
 - **US7**: T123–T126 (regras) → T127–T130 (use-cases + rotas)
 - **US8**: T131–T133 (auditoria) → T134–T138 (wiring cross-cutting)
-<<<<<<< HEAD
 
----
-
-<<<<<<< HEAD
 ## Parallel Example: User Story 5
 
 ```bash
@@ -484,15 +446,9 @@ Task: "Use-cases de produção (T113)"
 Task: "Use-cases de printRun (T115)"
 Task: "Use-cases de printer (T117)"
 ```
-=======
->>>>>>> f67991f (specs: regenerate tasks.md by user story, close A2 clarification on accumulated hours)
-
----
-
 ## Implementation Strategy
 
-<<<<<<< HEAD
-=======
+
 ## Parallel Example: User Story 5
 
 ```bash
@@ -513,7 +469,6 @@ Task: "Use-cases de printer (T117)"
 
 ## Implementation Strategy
 
->>>>>>> f67991f (specs: regenerate tasks.md by user story, close A2 clarification on accumulated hours)
 ### MVP First (User Stories 1 + 2)
 
 1. Complete Phase 1: Setup
@@ -523,13 +478,6 @@ Task: "Use-cases de printer (T117)"
 5. **STOP and VALIDATE**: Login + cadastro funcional e testável independentemente
 6. Deploy/demo if ready
 
-<<<<<<< HEAD
-=======
-## Implementation Strategy
-
->>>>>>> 294e3bf (Newreports for smaller models)
-=======
->>>>>>> f67991f (specs: regenerate tasks.md by user story, close A2 clarification on accumulated hours)
 ### Incremental Delivery
 
 1. Complete Setup + Foundational → Foundation ready
@@ -596,7 +544,7 @@ O MVP é **US1 + US2** (autenticação + cadastros), que corresponde a **66 tare
 
 ## Notes
 
-<<<<<<< HEAD
+
 - [P] tasks = different files, no dependencies
 - Story label maps task to specific user story for traceability
 - Each user story should be independently completable and testable
@@ -607,26 +555,4 @@ O MVP é **US1 + US2** (autenticação + cadastros), que corresponde a **66 tare
 - **Identifiers never change**: FR-nnn, SC-nnn, Tnnn, story numbers, and principle numbers MUST NOT be renumbered or reused (Constitution rule 4)
 - **Names come from source**: entity names, field names, enum values, routes and roles MUST be copied from `data-model.md` and `contracts/` (Constitution rule 5)
 - **Don't guess**: missing rules, numbers, limits or behaviors MUST become `[NEEDS CLARIFICATION: question]` in the owning artifact (Constitution rule 6)
-=======
-- [P] = outro arquivo, sem dependência incompleta
-- Um teste que importa uma regra inexistente falha na importação. Criar a regra exportando a função que devolve `fail('NOT_IMPLEMENTED', …)` conta como vermelho
-- A história no rótulo amarra a tarefa à spec
-- T080–T083 corrigem a US1 já implementada; T084–T085 formam a fase 8.5; T086, T087 e T088 entram na US5. A lista em C# publicada em 2026-11-17 tinha outra numeração; não usar aqueles IDs.
-- Os IDs não seguem a ordem do arquivo em três pontos: T077 e T026 aparecem entre os testes da US1, T055 entre os testes da US5 e T076 antes de T075. A ordem de execução é a ordem do arquivo
-- Não copiar código de `docs_apoio/software_ref`; aquele diretório é leitura
-- Não criar módulo de assistente, cliente fiscal, SDK de impressora, ORM nem biblioteca de fila
-- Commit ao fim de cada checkpoint, com `npm test` e `npm run typecheck` verdes
-<<<<<<< HEAD
->>>>>>> 294e3bf (Newreports for smaller models)
-=======
-- [P] tasks = different files, no dependencies
-- Story label maps task to specific user story for traceability
-- Each user story should be independently completable and testable
-- Verify tests fail before implementing
-- Commit after each task or logical group
-- Stop at any checkpoint to validate story independently
-- Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
-- **Identifiers never change**: FR-nnn, SC-nnn, Tnnn, story numbers, and principle numbers MUST NOT be renumbered or reused (Constitution rule 4)
-- **Names come from source**: entity names, field names, enum values, routes and roles MUST be copied from `data-model.md` and `contracts/` (Constitution rule 5)
-- **Don't guess**: missing rules, numbers, limits or behaviors MUST become `[NEEDS CLARIFICATION: question]` in the owning artifact (Constitution rule 6)
->>>>>>> f67991f (specs: regenerate tasks.md by user story, close A2 clarification on accumulated hours)
+
