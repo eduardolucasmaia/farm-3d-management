@@ -52,6 +52,7 @@ Conferido contra a constituição 2.0.0 em 2026-11-17, depois da troca de stack.
 | V | Exemplo marcado | FR-025 | `farm_settings.examples_are_fictional` com `CHECK (= 1)` (T010); quickstart seção 7 passo 5 |
 | VI. Escopo parado | Nada da lista "Fora" criado | FR-026 | research.md item 16; T076 |
 | VI | Sem estrutura sem requisito | FR-003 | T033 (`MasterDataRules`); T034 (Masters) e T035 (rotas de cadastro) em `server/src/api/routes/cadastros/`; Key Entities em spec.md |
+| V | Custo estimado MUST permanecer distinto do preço de venda | FR-004 | T032 (`master-data-rules.test.ts`) valida preço de venda ≠ custo e peças/minutos/gramas por prancha > 0; FR-004 adicionado nesta edição |
 | VI | Sem estrutura sem requisito | — | Sem ORM, fila, cron, compilação nem Docker; Complexity Tracking vazio |
 | VII. Acesso por papel, segredo fora do repositório | Papéis por rota, recusa no servidor | FR-001, FR-002 | Matriz de papéis em contracts/; `requireRoles` por rota (T013); T013 `authz.test.ts` cobre 401 e 403; quickstart seções 2 e 8 |
 | VII | Nenhum segredo versionado | Constraints acima | T004 (`.env.example` sem valor de segredo; `.env` e `data/` ignorados); T006 recusa subir sem `JWT_SIGNING_KEY`; T011 (senha de semente só por variável, só em development) |

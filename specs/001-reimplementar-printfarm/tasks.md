@@ -124,7 +124,7 @@ Valem para toda tarefa abaixo, além das "Regras para agentes" da constituição
 
 ### Tests for User Story 2
 
-- [ ] T032 [P] [US2] [FR-003] Escrever `server/tests/domain/master-data-rules.test.ts` falhando quando o limite de manutenção é zero ou ausente, quando peças por prancha são menores que 1, quando segundos ou miligramas por prancha não são maiores que zero e quando `hex` não é vazio nem `#RRGGBB`. Regras: "Limite de horas de manutenção maior que zero." e "Peças por prancha, minutos por prancha e gramas por prancha, todos maiores que zero."
+- [ ] T032 [P] [US2] [FR-003] [FR-004] Escrever `server/tests/domain/master-data-rules.test.ts` falhando quando o limite de manutenção é zero ou ausente, quando peças por prancha são menores que 1, quando segundos ou miligramas por prancha não são maiores que zero e quando `hex` não é vazio nem `#RRGGBB`. Regras: "Limite de horas de manutenção maior que zero." e "Peças por prancha, minutos por prancha e gramas por prancha, todos maiores que zero."
 
 ### Implementation for User Story 2
 
