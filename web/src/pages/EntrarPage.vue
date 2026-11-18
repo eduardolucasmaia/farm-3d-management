@@ -29,8 +29,12 @@ async function entrar() {
 </script>
 
 <template>
-  <main class="narrow">
-    <h1>Farm 3D</h1>
+  <main class="narrow login">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <h1>Farm 3D</h1>
+    </div>
+    <p class="lead">Gestão da farm de impressão 3D: pedidos, lotes de produção, fila e frota.</p>
     <form class="card" @submit.prevent="entrar">
       <label>
         E-mail
@@ -45,3 +49,28 @@ async function entrar() {
     </form>
   </main>
 </template>
+
+<style scoped>
+.login {
+  padding-top: 12vh;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background:
+    linear-gradient(var(--accent-ink), var(--accent-ink)) 8px 10px / 18px 3px no-repeat,
+    linear-gradient(var(--accent-ink), var(--accent-ink)) 8px 16px / 18px 3px no-repeat,
+    linear-gradient(var(--accent-ink), var(--accent-ink)) 8px 22px / 12px 3px no-repeat,
+    var(--accent);
+}
+form button {
+  padding: 10px 12px;
+}
+</style>
