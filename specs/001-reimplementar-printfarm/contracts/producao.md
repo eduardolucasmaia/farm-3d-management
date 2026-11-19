@@ -22,21 +22,20 @@ Só pedido Approved ou InProduction por planejamento já existente. Corta cada l
 
 O cenário de prova: 10 peças, 4 por prancha geram três lotes, o último com metade das gramas e minutos da prancha cheia. Os campos released* são preservados após editar o perfil, inclusive em reimpressões. Somente novas liberações usam o perfil atualizado. FR-011 e FR-012.
 
-## GET /api/lots?status=Queued
+## GET /api/lots?status=
 
-Lista os lotes de produção da fila com id, plannedGrams, plannedMinutes, reservedGrams, missingMaterialG, printerId opcional, priority e position. Inclui os três campos released* para conferência dos parâmetros preservados.
+Papéis: Production, Operator, Admin. `status` aceita uma lista separada por vírgula de valores de `ProductionLotStatus`; sem `status`, devolve Released e Queued. Ordem: posição na fila, depois pedido e índice do lote.
+
+Itens: `id`, `orderNumber`, `productName`, `materialName`, `lotIndex`, `qtyPlanned`, `plannedGrams`, `plannedMinutes`, `reservedGrams`, `missingMaterialG`, `releasedPiecesPerPlate`, `releasedMinutesPerPlate`, `releasedGramsPerPlate`, `status`, `printerId`, `printerName`, `priority`, `position`.
 
 `missingMaterialG = max(0, plannedGrams - reservedGrams)`. É um impedimento calculado, não um novo estado. Reimpressão sem complemento integral continua Queued com esse valor positivo. Disponibilidade da impressora é conferida separadamente. FR-018.
 
-## GET /api/lots?status=
-
-Papéis: Production, Operator, Admin. `status` aceita uma lista separada por vírgula de valores de `ProductionLotStatus`; sem `status`, devolve Released e Queued. Itens: `id`, `orderNumber`, `productName`, `materialName`, `lotIndex`, `qtyPlanned`, `plannedGrams`, `plannedMinutes`, `status`, `printerId`, `printerName`, `position`. Ordem: posição na fila, depois id.
-
 ## POST /api/lots/{id}/queue
 
-Corpo: `{ "printerId": number|null, "priority": number }`. Só lote Released; outro estado: 409.
+Corpo: `{ "printerId": number|null, "priority": number }`. Só lote Released ou Queued; outro estado: 409.
 
-- 201 para um lote Released ainda sem fila; 200 para atribuir ou atualizar o item Queued já existente. Nunca duplicar o item ativo do lote de produção.
+- 201 para um lote Released ainda sem fila; 200 para atribuir ou trocar a impressora do item Queued já existente. Nunca duplicar o item ativo do lote de produção.
+- Mais de um lote pode esperar na fila da mesma impressora. "Ocupada" é a impressora fora de Available (Printing, AwaitingPickup, Preparing); "Dois lotes não ocupam a mesma impressora ao mesmo tempo" é garantido ao iniciar a execução.
 - 409: impressora inativa, indisponível, ocupada, em manutenção ou incompatível. Lista vazia de materiais aceita qualquer material.
 
 A fila inicial criada na liberação não dispensa essas validações ao atribuir uma impressora. FR-013.

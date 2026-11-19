@@ -8,7 +8,9 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/, quickstart.md
 
-**Revisado**: 2026-11-18, para a stack Node.js + TypeScript + SQLite (research.md item 1). Organização por história de usuário. Os caminhos de arquivo seguem plan.md "Project Structure".
+**Revisado**: 2026-11-17, para a stack Node.js + TypeScript + SQLite (research.md item 1). Os IDs T001–T075 mantêm o propósito da versão .NET; caminhos e comandos mudaram. A antiga T072.5 virou T076. T077, T078 e T079 são novas. T089 é a fábrica simulada. T080–T088 vêm da integração das clarificações de 2026-11-17 (spec.md, "Clarifications"; research.md itens 17 a 20). A lista de 119 tarefas em C# publicada na mesma data foi substituída por esta; o que nela era regra de negócio está aqui.
+
+**Leitura**: quem vai implementar começa por `AGENTS.md` na raiz e pelo brief da história em `briefs/`; deste arquivo, leia só a seção da sua fase. Tarefas concluídas (`[X]`) aparecem resumidas em uma linha; o texto original está no histórico (`git log -p -- specs/001-reimplementar-printfarm/tasks.md`).
 
 **Leitura**: quem vai implementar começa por `AGENTS.md` na raiz e pelo brief da história em `briefs/`; deste arquivo, leia só a seção da sua fase. Tarefas concluídas (`[X]`) aparecem resumidas em uma linha; o texto original está no histórico (`git log -p -- specs/001-reimplementar-printfarm/tasks.md`).
 **Revisado**: 2026-11-18, para a stack Node.js + TypeScript + SQLite (research.md item 1). Organização por história de usuário. Os caminhos de arquivo seguem plan.md "Project Structure".
@@ -23,17 +25,12 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 **Purpose**: Project initialization and basic structure
 
-- [X] T001 Remove arquivos C# e .NET deixados por implementação anterior (`Farm3d.sln`, `src/`, `docker-compose.yml`) em `package.json`
-- [X] T002 [P] Criar `package.json` raiz com workspaces: `server` e `web`
-- [X] T003 [P] Criar `server/package.json` com dependências: fastify, @fastify/jwt, @fastify/problem, node:sqlite, vitest, typescript
-- [X] T004 [P] Criar `web/package.json` com dependências: vue, vite, vue-router, pinia, vitest
-- [X] T005 [P] Criar `server/tsconfig.json` e `web/tsconfig.json`
-- [X] T006 [P] Configurar Vitest no `server/vitest.config.ts`
-- [X] T007 [P] Configurar Vitest no `web/vitest.config.ts`
-- [X] T008 [P] Configurar ESLint e Prettier no `server` e no `web`
-- [X] T009 Criar estrutura de pastas do servidor: `server/src/domain/`, `server/src/application/`, `server/src/infrastructure/`, `server/src/api/`, `server/migrations/`, `server/tests/`
-- [X] T010 Criar estrutura de pastas do cliente: `web/src/pages/`, `web/src/router/`, `web/src/stores/`, `web/tests/`
-- [X] T011 Criar `.env.example` com nomes de variáveis (sem segredos): `JWT_SIGNING_KEY`, `FARM3D_SEED_PASSWORD`, `DATABASE_PATH`, `TIME_ZONE`
+- [X] T001 Workspaces npm (raiz e `server/`), scripts e remoção dos restos .NET
+- [X] T002 [P] `server/tsconfig.json` e `server/vitest.config.ts`
+- [X] T003 [P] Script `typecheck` na SPA, `npm install` e `package-lock.json`
+- [X] T004 [P] `.env.example` sem segredo; `.gitignore` com `data/`, `*.db` e `__pycache__/`
+- [X] T005 [P] `.editorconfig` sem a seção `[*.cs]`
+- [X] T006 `server/src/infrastructure/config.ts`
 
 ---
 
@@ -126,9 +123,17 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 
 ---
 
-## Phase 3: User Story 1 — Identificar e controlar acesso por papel (Priority: P1) 🎯 MVP
+- [X] T007 `server/tests/architecture/domain-purity.test.ts` e `server/src/domain/result.ts`
+- [X] T008 [P] `server/src/domain/enums.ts`
+- [X] T009 [P] `server/tests/domain/units.test.ts` e `server/src/domain/units.ts`
+- [X] T010 `server/tests/infrastructure/db.test.ts`, `db/database.ts`, `db/migrate.ts`, `db/migrate-cli.ts` e `0001-foundation.sql`
+- [X] T011 Política de senha e travamento de login (teste e regra), `auth/password.ts`, `users-repo.ts`, `identity-seed.ts`
+- [X] T012 `POST /api/auth/login` em `routes/auth.ts`, com `auth/jwt.ts`
+- [X] T013 `api/app.ts` (`requireRoles`, problem+json, CORS), `api/main.ts` e `tests/api/authz.test.ts`
+- [X] T014 `web/tests/route-guard.spec.ts`, router e store de sessão
+- [X] T015 `jobs/hourly-farm-job.ts`, agendamento em `main.ts` e `jobs/run-once.ts`
 
-**Goal**: Identificar pessoas por e-mail e senha, e restringir cada ação a papéis: Admin, Vendas, Produção, Compras, Operador.
+- [X] T079 `web/src/pages/EntrarPage.vue`, `web/src/api.ts` e `web/src/style.css`
 
 
 **Independent Test**: Login com credenciais corretas retorna token JWT. Usuário sem sessão recebe 401. Usuário com papel inadequado recebe 403 em rota protegida.
@@ -170,7 +175,6 @@ description: "Task list for the Farm 3D reimplementation of the PrintFarm core"
 - [X] T029 [US1] Rotas em `routes/lots.ts`, `routes/sales-orders.ts` (leitura) e `routes/cadastros/printers.ts` (leitura)
 - [X] T030 [US1] `seed/demo-seed.ts`, com os dados fictícios da seção 1 do quickstart
 - [X] T031 [US1] `web/src/pages/PedidoPage.vue` e `FilaPage.vue`
-
 
 ### Ajustes da US1 pelas clarificações de 2026-11-17
 
@@ -449,34 +453,7 @@ Task: "Use-cases de printer (T117)"
 ## Implementation Strategy
 
 
-## Parallel Example: User Story 5
-
-```bash
-# Launch all domain rules for User Story 5 together:
-Task: "Regra de liberação de lotes (T103)"
-Task: "Regra de enfileiramento (T104)"
-Task: "Regra de início de execução (T105)"
-Task: "Regra de conclusão (T107)"
-Task: "Regra de falha (T108)"
-
-# Launch all use-cases for User Story 5 together after rules:
-Task: "Use-cases de produção (T113)"
-Task: "Use-cases de printRun (T115)"
-Task: "Use-cases de printer (T117)"
-```
-
----
-
 ## Implementation Strategy
-
-### MVP First (User Stories 1 + 2)
-
-1. Complete Phase 1: Setup
-2. Complete Phase 2: Foundational (CRITICAL — blocks all stories)
-3. Complete Phase 3: US1 — Identificar e controlar acesso
-4. Complete Phase 4: US2 — Cadastrar entidades
-5. **STOP and VALIDATE**: Login + cadastro funcional e testável independentemente
-6. Deploy/demo if ready
 
 ### Incremental Delivery
 
@@ -544,15 +521,11 @@ O MVP é **US1 + US2** (autenticação + cadastros), que corresponde a **66 tare
 
 ## Notes
 
-
-- [P] tasks = different files, no dependencies
-- Story label maps task to specific user story for traceability
-- Each user story should be independently completable and testable
-- Verify tests fail before implementing
-- Commit after each task or logical group
-- Stop at any checkpoint to validate story independently
-- Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
-- **Identifiers never change**: FR-nnn, SC-nnn, Tnnn, story numbers, and principle numbers MUST NOT be renumbered or reused (Constitution rule 4)
-- **Names come from source**: entity names, field names, enum values, routes and roles MUST be copied from `data-model.md` and `contracts/` (Constitution rule 5)
-- **Don't guess**: missing rules, numbers, limits or behaviors MUST become `[NEEDS CLARIFICATION: question]` in the owning artifact (Constitution rule 6)
-
+- [P] = outro arquivo, sem dependência incompleta
+- Um teste que importa uma regra inexistente falha na importação. Criar a regra exportando a função que devolve `fail('NOT_IMPLEMENTED', …)` conta como vermelho
+- A história no rótulo amarra a tarefa à spec
+- T080–T083 corrigem a US1 já implementada; T084–T085 formam a fase 8.5; T086, T087 e T088 entram na US5. A lista em C# publicada em 2026-11-17 tinha outra numeração; não usar aqueles IDs.
+- Os IDs não seguem a ordem do arquivo em três pontos: T077 e T026 aparecem entre os testes da US1, T055 entre os testes da US5 e T076 antes de T075. A ordem de execução é a ordem do arquivo
+- Não copiar código de `docs_apoio/software_ref`; aquele diretório é leitura
+- Não criar módulo de assistente, cliente fiscal, SDK de impressora, ORM nem biblioteca de fila
+- Commit ao fim de cada checkpoint, com `npm test` e `npm run typecheck` verdes
