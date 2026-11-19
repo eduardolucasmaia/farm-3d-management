@@ -9,6 +9,14 @@ import { registerAuthRoutes } from './routes/auth.ts'
 import { registerPrinterRoutes } from './routes/cadastros/printers.ts'
 import { registerLotRoutes } from './routes/lots.ts'
 import { registerSalesOrderRoutes } from './routes/sales-orders.ts'
+import { registerCustomerRoutes } from './routes/cadastros/customers.ts'
+import { registerSupplierRoutes } from './routes/cadastros/suppliers.ts'
+import { registerColorRoutes } from './routes/cadastros/colors.ts'
+import { registerMaterialRoutes } from './routes/cadastros/materials.ts'
+import { registerFiles3DRoutes } from './routes/cadastros/files3d.ts'
+import { registerPrintProfileRoutes } from './routes/cadastros/print-profiles.ts'
+import { registerProductRoutes } from './routes/cadastros/products.ts'
+import { registerOperatorRoutes } from './routes/cadastros/operators.ts'
 
 export interface AppDeps {
   db: Db
@@ -78,6 +86,14 @@ export async function buildApp(deps: AppDeps, options: { logger?: boolean } = {}
   registerSalesOrderRoutes(app, deps)
   registerLotRoutes(app, deps)
   registerPrinterRoutes(app, deps)
+  registerCustomerRoutes(app, deps)
+  registerSupplierRoutes(app, deps)
+  registerColorRoutes(app, deps)
+  registerMaterialRoutes(app, deps)
+  registerFiles3DRoutes(app, deps)
+  registerPrintProfileRoutes(app, deps)
+  registerProductRoutes(app, deps)
+  registerOperatorRoutes(app, deps)
 
   return app
 }
